@@ -1,6 +1,5 @@
 fastapi[standard]
 uvicorn
-dotenv
+beautifulsoup4
+nodriver
 google-generativeai
-fastapi
-uvicorn
