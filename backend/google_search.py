@@ -1,12 +1,12 @@
 from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
+import nodriver
+import asyncio
 
 
-def google_search(query):
+async def google_search(query):
+    print("Entering google_search function")
     """
-    Performs a Google search using Selenium ChromeDriver and BeautifulSoup4 to extracts the page title, link, and blurb for each result.
+    Performs a Google search using nodriver and BeautifulSoup4 to extract the page title, link, and blurb for each result.
 
     Args:
         query (str): The search query.
@@ -14,40 +14,45 @@ def google_search(query):
     Returns:
         list: A list of dictionaries, where each dictionary contains the title, link, and blurb of a search result.
     """
-    # Set up Chrome options for headless browsing
-    chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--disable-gpu")
-
-    # Set up ChromeDriver with webdriver_manager
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=chrome_options)
-
-    # Construct the Google search URL
-    url = f"https://www.google.com/search?q={query}"
-
     try:
-        # Fetch the Google search page using Selenium
-        driver.get(url)
-        page_source = driver.page_source
+        # Initialize nodriver
+        browser = await nodriver.start()
 
-        print(page_source)
+        # Construct the Google search URL
+        url = f"https://www.google.com/search?q={query}"
+
+        # Fetch the Google search page using nodriver
+        tab = await browser.get(url)
+        page_source = await tab.get_content()
+        # print(page_source)
+
+        await asyncio.sleep(200)  # Wait for the page to load
+
+        if page_source is None:
+            print("Error: Could not retrieve page source using nodriver.")
+            if 'browser' in locals():
+                await browser.stop()
+            return []
+
+        # print(f"Page source: {page_source[:500]}...")  # Print first 500 characters
 
         # Parse the HTML content with BeautifulSoup4
         soup = BeautifulSoup(page_source, "html.parser")
+        print(f"Soup: {soup.prettify()[:500]}...") # Print first 500 characters of prettified soup
 
         # Locate result elements using the correct CSS selector
-        result_elements = soup.select(".result.css-z73qjy")
+        result_elements = soup.select(".g") # broader selector
+        print(f"Result elements: {result_elements}")
 
         results = []
         for result_element in result_elements:
             try:
-                title_element = result_element.select_one(".wgl-title")
-                link_element = result_element.select_one(".wgl-display-url .default-link-text")
-                blurb_element = result_element.select_one(".description")
+                title_element = result_element.select_one("h3") # broader selector
+                link_element = result_element.select_one("a") # broader selector
+                blurb_element = result_element.select_one("div[data-sncf]") # broader selector
 
                 title = title_element.text if title_element else ""
-                link = link_element.text if link_element else ""
+                link = link_element["href"] if link_element and "href" in link_element.attrs else ""
                 blurb = blurb_element.text if blurb_element else ""
 
                 results.append({"title": title, "link": link, "blurb": blurb})
@@ -60,12 +65,18 @@ def google_search(query):
         print(f"Request failed: {e}")
         return []
     finally:
-        driver.quit()
-        print("-" * 20)
+        if 'browser' in locals():
+            try:
+                await browser.stop()
+            except Exception as e:
+                print(f"Error stopping browser: {e}")
 
 # Example usage
 if __name__ == "__main__":
-    query = "example search"
-    results = google_search(query)
-    for result in results:
-        print(result)
+    async def main():
+        query = "example search"
+        results = await google_search(query)
+        for result in results:
+            print(result)
+
+    asyncio.run(main())
