@@ -4,31 +4,17 @@ import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { usePermissions } from 'expo-media-library';
-import { useCameraPermissions } from 'expo-camera';
+import { Camera, CameraView, useCameraPermissions } from 'expo-camera';
+import * as WebBrowster from 'expo-web-browser';
+import * as React from 'react';
 
 export default function HomeScreen() {
-  const [cameraPermissions, requestCameraPermissions] = useCameraPermissions();
-  const [mediaLibraryPermissions, requestMediaLibraryPermissions] = usePermissions();
-
-  async function requestAllPermissions() {
-    const { status } = await requestCameraPermissions();
-    if (status != 'granted') {
-      Alert.alert('Permission required', 'Please allow camera permissions to use this feature.');
-    }
-
-    const { status: mediaLibraryStatus } = await requestMediaLibraryPermissions();
-    if (mediaLibraryStatus != 'granted') {
-      Alert.alert('Permission required', 'Please allow media library permissions to use this feature.');
-    }
-  }
+  const cameraRef = React.useRef<CameraView>(null);
 
 
   return (
-    <ThemedView style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-
-
-      <Button title="Request Camera Permissions" onPress={requestPermissions} />
+    <ThemedView style={{ flex: 1 }}>
+      <CameraView ref={cameraRef} style={{ flex:1}} />
     </ThemedView>
       
   );
