@@ -19,7 +19,7 @@ async def get_page_text_content(url):
         page_source = await tab.get_content()
 
         soup = BeautifulSoup(page_source, 'html.parser')
-        text_content = soup.get_text()
+        text_content = soup.find('body').get_text(separator=' ', strip=True)
         return text_content
 
     except Exception as e:
