@@ -170,33 +170,44 @@ const TaskModal: React.FC<TaskModalProps> = ({
               />
             )}
 
-            <Text style={styles.label}>Frequency</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={frequency}
-                onValueChange={(itemValue) => setFrequency(itemValue)}
-                style={styles.picker}
-                mode="dropdown"
+        <Text style={styles.label}>Frequency</Text>
+        <View style={styles.frequencyContainer}>
+          {['once', 'daily', 'weekly', 'monthly', 'other'].map((freq) => (
+            <TouchableOpacity
+              key={freq}
+              style={[
+                styles.frequencyButton,
+                frequency === freq ? styles.frequencyButtonActive : null,
+              ]}
+              onPress={() => setFrequency(freq)}
+            >
+              <Text
+                style={[
+                  styles.frequencyButtonText,
+                  frequency === freq ? styles.frequencyButtonTextActive : null,
+                ]}
               >
-                <Picker.Item label="Once" value="once" />
-                <Picker.Item label="Daily" value="daily" />
-                <Picker.Item label="Weekly" value="weekly" />
-                <Picker.Item label="Monthly" value="monthly" />
-                <Picker.Item label="Custom" value="other" />
-              </Picker>
-            </View>
-            
-            {frequency === 'other' && (
-              <>
-                <Text style={styles.label}>Custom Frequency</Text>
-                <TextInput
-                  style={styles.input}
-                  value={customFrequency}
-                  onChangeText={setCustomFrequency}
-                  placeholder="Enter custom frequency (e.g. Every 3 days)"
-                />
-              </>
-            )}
+                {freq === 'once' && 'Once'}
+                {freq === 'daily' && 'Daily'}
+                {freq === 'weekly' && 'Weekly'}
+                {freq === 'monthly' && 'Monthly'}
+                {freq === 'other' && 'Custom'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {frequency === 'other' && (
+          <>
+            <Text style={styles.label}>Custom Frequency</Text>
+            <TextInput
+              style={styles.input}
+              value={customFrequency}
+              onChangeText={setCustomFrequency}
+              placeholder="Enter custom frequency (e.g. Every 3 days)"
+            />
+          </>
+        )}
 
             <Text style={styles.label}>Type</Text>
             <View style={styles.pickerContainer}>
@@ -292,8 +303,31 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 15,
   },
+  frequencyContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
   picker: {
     height: 50,
+  },
+  frequencyButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 5,
+    padding: 10,
+    marginHorizontal: 5,
+    alignItems: 'center',
+  },
+  frequencyButtonActive: {
+    backgroundColor: '#4CAF50',
+  },
+  frequencyButtonText: {
+    fontSize: 16,
+  },
+  frequencyButtonTextActive: {
+    color: 'white',
   },
   saveButton: {
     backgroundColor: '#4CAF50',
