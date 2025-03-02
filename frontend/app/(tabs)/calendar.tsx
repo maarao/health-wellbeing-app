@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -6,8 +6,10 @@ import {
   Text,
   SafeAreaView,
   ScrollView,
+  FlatList,
+  Dimensions,
 } from 'react-native';
-import { format, addDays } from 'date-fns';
+import { format, addDays, isSameDay } from 'date-fns';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import TaskModal, { TaskPayload } from '../../components/Calendar/TaskModal';
 // Updated import path to use the new TypeScript component
@@ -25,42 +27,43 @@ interface Task {
 const HOUR_HEIGHT = 60;
 const START_HOUR = 7; // 7 AM
 const END_HOUR = 22; // 10 PM
+const DAYS_TO_SHOW = 14; // Show two weeks of dates
+const { width } = Dimensions.get('window');
 
 export default function CalendarScreen() {
-  const [currentDate] = useState(new Date());
+  const [selectedDateIndex, setSelectedDateIndex] = useState(0);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const flatListRef = useRef<FlatList>(null);
 
-  const days = [
-    {
-      date: currentDate,
-      dayTasks: tasks.filter(task => {
+  // Generate array of dates starting from today
+  const generateDays = () => {
+    const daysArray = [];
+    for (let i = 0; i < DAYS_TO_SHOW; i++) {
+      const date = addDays(new Date(), i);
+      const dayTasks = tasks.filter(task => {
         const taskDate = new Date(task.date);
-        return (
-          taskDate.getDate() === currentDate.getDate() &&
-          taskDate.getMonth() === currentDate.getMonth() &&
-          taskDate.getFullYear() === currentDate.getFullYear()
-        );
-      })
-    },
-    {
-      date: addDays(currentDate, 1),
-      dayTasks: tasks.filter(task => {
-        const taskDate = new Date(task.date);
-        const nextDate = addDays(currentDate, 1);
-        return (
-          taskDate.getDate() === nextDate.getDate() &&
-          taskDate.getMonth() === nextDate.getMonth() &&
-          taskDate.getFullYear() === nextDate.getFullYear()
-        );
-      })
+        return isSameDay(taskDate, date);
+      });
+      
+      daysArray.push({
+        date,
+        dayTasks
+      });
     }
-  ];
+    return daysArray;
+  };
+  
+  const days = generateDays();
 
   const handleAddTask = (newTask: TaskPayload) => {
     const taskWithId: Task = {
       id: Date.now().toString(),
-      ...newTask,
+      title: newTask.title,
+      description: newTask.description,
+      date: newTask.date.toISOString(),
+      frequency: newTask.frequency,
+      type: newTask.type,
     };
     setTasks(prevTasks => [...prevTasks, taskWithId]);
     setIsModalVisible(false);
@@ -113,10 +116,10 @@ export default function CalendarScreen() {
     };
 
     return (
-      <View style={styles.dayContainer}>
+      <View style={[styles.dayContainer, { width }]}>
         <View style={styles.dayHeader}>
-          <Text style={styles.dayName}>{format(date, 'EEE')}</Text>
-          <Text style={styles.dayNumber}>{format(date, 'd')}</Text>
+          <Text style={styles.dayName}>{format(date, 'EEEE')}</Text>
+          <Text style={styles.dayNumber}>{format(date, 'MMMM d, yyyy')}</Text>
         </View>
         <ScrollView style={styles.timeSlotsContainer}>
           <View style={styles.contentContainer}>
@@ -128,20 +131,93 @@ export default function CalendarScreen() {
     );
   };
 
+  // Renders the date selector at the top
+  const renderDateSelector = () => {
+    return (
+      <FlatList
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        data={days}
+        keyExtractor={(item, index) => `date-${index}`}
+        renderItem={({ item, index }) => (
+          <TouchableOpacity 
+            style={[
+              styles.dateItem, 
+              selectedDateIndex === index ? styles.selectedDateItem : null
+            ]}
+            onPress={() => {
+              setSelectedDateIndex(index);
+              flatListRef.current?.scrollToIndex({ index, animated: true });
+            }}
+          >
+            <Text 
+              style={[
+                styles.dateSelectorDay, 
+                selectedDateIndex === index ? styles.selectedDateText : null
+              ]}
+            >
+              {format(item.date, 'EEE')}
+            </Text>
+            <Text 
+              style={[
+                styles.dateSelectorDate, 
+                selectedDateIndex === index ? styles.selectedDateText : null
+              ]}
+            >
+              {format(item.date, 'd')}
+            </Text>
+          </TouchableOpacity>
+        )}
+        contentContainerStyle={styles.dateList}
+      />
+    );
+  };
+
+  // Handle viewable items change
+  const handleViewableItemsChanged = React.useCallback(({ viewableItems }: { viewableItems: Array<{ index: number }> }) => {
+    if (viewableItems.length > 0) {
+      setSelectedDateIndex(viewableItems[0].index);
+    }
+  }, []);
+
+  // View configuration for FlatList
+  const viewabilityConfig = React.useRef({
+    itemVisiblePercentThreshold: 50
+  }).current;
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Health Schedule</Text>
       </View>
-      <View style={styles.calendarContainer}>
-        {days.map((day, index) => (
+      
+      {/* Date selector strip */}
+      {renderDateSelector()}
+      
+      {/* Swipeable calendar days */}
+      <FlatList
+        ref={flatListRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        data={days}
+        renderItem={({ item }) => (
           <CalendarDay
-            key={index}
-            date={day.date}
-            tasks={day.dayTasks}
+            date={item.date}
+            tasks={item.dayTasks}
           />
-        ))}
-      </View>
+        )}
+        keyExtractor={(item, index) => `day-${index}`}
+        onViewableItemsChanged={handleViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        initialScrollIndex={selectedDateIndex}
+        getItemLayout={(data, index) => ({
+          length: width,
+          offset: width * index,
+          index,
+        })}
+      />
+      
       <TouchableOpacity
         style={styles.addButton}
         onPress={() => setIsModalVisible(true)}
@@ -173,10 +249,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333333',
   },
-  calendarContainer: {
-    flexDirection: 'row',
-    flex: 1,
-  },
   addButton: {
     position: 'absolute',
     bottom: 100,
@@ -195,8 +267,6 @@ const styles = StyleSheet.create({
   },
   dayContainer: {
     flex: 1,
-    borderRightWidth: 0.5,
-    borderRightColor: '#E0E0E0',
   },
   dayHeader: {
     height: 60,
@@ -207,7 +277,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   dayName: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#666666',
   },
   dayNumber: {
@@ -239,5 +309,34 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#E0E0E0',
     marginTop: 10,
+  },
+  dateList: {
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    backgroundColor: '#fff',
+  },
+  dateItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+  },
+  selectedDateItem: {
+    backgroundColor: '#007AFF',
+  },
+  dateSelectorDay: {
+    fontSize: 13,
+    color: '#666',
+  },
+  dateSelectorDate: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  selectedDateText: {
+    color: '#fff',
   },
 });

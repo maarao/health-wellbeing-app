@@ -172,7 +172,7 @@ const TaskModal: React.FC<TaskModalProps> = ({
 
         <Text style={styles.label}>Frequency</Text>
         <View style={styles.frequencyContainer}>
-          {['once', 'daily', 'weekly', 'monthly', 'other'].map((freq) => (
+          {['once', 'daily', 'weekly', 'monthly'].map((freq) => (
             <TouchableOpacity
               key={freq}
               style={[
@@ -191,39 +191,10 @@ const TaskModal: React.FC<TaskModalProps> = ({
                 {freq === 'daily' && 'Daily'}
                 {freq === 'weekly' && 'Weekly'}
                 {freq === 'monthly' && 'Monthly'}
-                {freq === 'other' && 'Custom'}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
-
-        {frequency === 'other' && (
-          <>
-            <Text style={styles.label}>Custom Frequency</Text>
-            <TextInput
-              style={styles.input}
-              value={customFrequency}
-              onChangeText={setCustomFrequency}
-              placeholder="Enter custom frequency (e.g. Every 3 days)"
-            />
-          </>
-        )}
-
-            <Text style={styles.label}>Type</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={type}
-                onValueChange={(itemValue: React.SetStateAction<string>) => setType(itemValue)}
-                style={styles.picker}
-              >
-                <Picker.Item label="Personal" value="personal" />
-                <Picker.Item label="Work" value="work" />
-                <Picker.Item label="Health" value="health" />
-                <Picker.Item label="Education" value="education" />
-                <Picker.Item label="Other" value="other" />
-              </Picker>
-            </View>
-
             <TouchableOpacity
               style={styles.saveButton}
               onPress={handleSave}
