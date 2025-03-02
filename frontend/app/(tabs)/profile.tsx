@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
+  TextInput,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
@@ -14,10 +15,8 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 type SectionType = 'identification' | 'medicalHistory' | 'allergies' | 'notifications' | 'medications';
 
 export default function ProfileScreen() {
-  const [activeSection, setActiveSection] = useState<SectionType>('identification');
-  
   // Mock user data
-  const user = {
+  const initialUser = {
     name: 'Jake the Dog',
     email: 'bacon@pancakes.com',
     avatar: '../../../assets/images/jake_the_dog.png',
@@ -41,6 +40,100 @@ export default function ProfileScreen() {
     ]
   };
 
+  const [activeSection, setActiveSection] = useState<SectionType>('identification');
+  const [isEditing, setIsEditing] = useState(false);
+  const [user, setUser] = useState(initialUser);
+  const [editedUser, setEditedUser] = useState(initialUser);
+
+  const handleEditProfile = () => {
+    setIsEditing(true);
+  };
+
+  const handleSaveProfile = () => {
+    setUser(editedUser);
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditedUser(user);
+    setIsEditing(false);
+  };
+
+  const handleChange = (key: string, value: string) => {
+    setEditedUser({ ...editedUser, [key]: value });
+  };
+
+  const renderEditProfileView = () => (
+    <View style={styles.editProfileContainer}>
+      <ScrollView>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Name</Text>
+          <TextInput
+            style={styles.infoValue}
+            value={editedUser.name}
+            onChangeText={(text) => handleChange('name', text)}
+          />
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Email</Text>
+          <TextInput
+            style={styles.infoValue}
+            value={editedUser.email}
+            onChangeText={(text) => handleChange('email', text)}
+          />
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Date of Birth</Text>
+          <TextInput
+            style={styles.infoValue}
+            value={editedUser.dateOfBirth}
+            onChangeText={(text) => handleChange('dateOfBirth', text)}
+          />
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Gender</Text>
+          <TextInput
+            style={styles.infoValue}
+            value={editedUser.gender}
+            onChangeText={(text) => handleChange('gender', text)}
+          />
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Blood Type</Text>
+          <TextInput
+            style={styles.infoValue}
+            value={editedUser.bloodType}
+            onChangeText={(text) => handleChange('bloodType', text)}
+          />
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Height</Text>
+          <TextInput
+            style={styles.infoValue}
+            value={editedUser.height}
+            onChangeText={(text) => handleChange('height', text)}
+          />
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Weight</Text>
+          <TextInput
+            style={styles.infoValue}
+            value={editedUser.weight}
+            onChangeText={(text) => handleChange('weight', text)}
+          />
+        </View>
+        <View style={styles.editProfileButtons}>
+          <TouchableOpacity style={styles.saveProfileButton} onPress={handleSaveProfile}>
+            <Text style={styles.saveProfileText}>Save Changes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.cancelProfileButton} onPress={handleCancelEdit}>
+            <Text style={styles.cancelProfileText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
+  );
+
   // Render content based on active section
   const renderSectionContent = () => {
     switch (activeSection) {
@@ -49,34 +142,34 @@ export default function ProfileScreen() {
           <View style={styles.sectionContent}>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Name</Text>
-              <Text style={styles.infoValue}>{user.name}</Text>
+              <Text style={styles.infoValue}>{initialUser.name}</Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Email</Text>
-              <Text style={styles.infoValue}>{user.email}</Text>
+              <Text style={styles.infoValue}>{initialUser.email}</Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Date of Birth</Text>
-              <Text style={styles.infoValue}>{user.dateOfBirth}</Text>
+              <Text style={styles.infoValue}>{initialUser.dateOfBirth}</Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Gender</Text>
-              <Text style={styles.infoValue}>{user.gender}</Text>
+              <Text style={styles.infoValue}>{initialUser.gender}</Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Blood Type</Text>
-              <Text style={styles.infoValue}>{user.bloodType}</Text>
+              <Text style={styles.infoValue}>{initialUser.bloodType}</Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Height</Text>
-              <Text style={styles.infoValue}>{user.height}</Text>
+              <Text style={styles.infoValue}>{initialUser.height}</Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Weight</Text>
-              <Text style={styles.infoValue}>{user.weight}</Text>
+              <Text style={styles.infoValue}>{initialUser.weight}</Text>
             </View>
             <View>
-                <TouchableOpacity style={styles.editProfileButton}>
+                <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
                     <Text style={styles.editProfileText}>Edit Profile</Text>
                 </TouchableOpacity>
             </View>
@@ -171,63 +264,69 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.profileHeader}>
-        <View style={styles.avatarContainer}>
-        <Image 
-            source={require('../../assets/images/jake_the_dog.png')} 
-            style={styles.avatar}
-            />
-          <TouchableOpacity style={styles.editAvatarButton}>
-            <Icon name="edit" size={16} color="#fff" />
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.profileName}>{user.name}</Text>
-      </View>
-
-      <ScrollView style={styles.contentContainer}>
-        {/* Navigation Tabs */}
-        <View style={styles.tabsContainer}>
-          {[
-            { id: 'identification', label: 'Identification', icon: 'person' },
-            { id: 'medicalHistory', label: 'Medical History', icon: 'history' },
-            { id: 'allergies', label: 'Allergies', icon: 'warning' },
-            { id: 'notifications', label: 'Notifications', icon: 'notifications' },
-            { id: 'medications', label: 'Medications', icon: 'medication' },
-          ].map((tab) => (
-            <TouchableOpacity
-              key={tab.id}
-              style={[
-                styles.tabButton,
-                activeSection === tab.id && styles.activeTabButton
-              ]}
-              onPress={() => setActiveSection(tab.id as SectionType)}
-            >
-              <Icon 
-                name={tab.icon} 
-                size={24} 
-                color={activeSection === tab.id ? '#4CAF50' : '#666'} 
+      {isEditing ? (
+        renderEditProfileView()
+      ) : (
+        <>
+          <View style={styles.profileHeader}>
+            <View style={styles.avatarContainer}>
+              <Image 
+                source={require('../../assets/images/jake_the_dog.png')} 
+                style={styles.avatar}
               />
-              <Text 
-                style={[
-                  styles.tabLabel,
-                  activeSection === tab.id && styles.activeTabLabel
-                ]}
-              >
-                {tab.label}
-              </Text>
-              <Icon 
-                name="chevron-right" 
-                size={24} 
-                color="#ccc" 
-                style={styles.tabArrow}
-              />
-            </TouchableOpacity>
-          ))}
-        </View>
+              <TouchableOpacity style={styles.editAvatarButton}>
+                <Icon name="edit" size={16} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.profileName}>{user.name}</Text>
+          </View>
 
-        {/* Section Content */}
-        {renderSectionContent()}
-      </ScrollView>
+          <ScrollView style={styles.contentContainer}>
+            {/* Navigation Tabs */}
+            <View style={styles.tabsContainer}>
+              {[
+                { id: 'identification', label: 'Identification', icon: 'person' },
+                { id: 'medicalHistory', label: 'Medical History', icon: 'history' },
+                { id: 'allergies', label: 'Allergies', icon: 'warning' },
+                { id: 'notifications', label: 'Notifications', icon: 'notifications' },
+                { id: 'medications', label: 'Medications', icon: 'medication' },
+              ].map((tab) => (
+                <TouchableOpacity
+                  key={tab.id}
+                  style={[
+                    styles.tabButton,
+                    activeSection === tab.id && styles.activeTabButton
+                  ]}
+                  onPress={() => setActiveSection(tab.id as SectionType)}
+                >
+                  <Icon 
+                    name={tab.icon} 
+                    size={24} 
+                    color={activeSection === tab.id ? '#4CAF50' : '#666'} 
+                  />
+                  <Text 
+                    style={[
+                      styles.tabLabel,
+                      activeSection === tab.id && styles.activeTabLabel
+                    ]}
+                  >
+                    {tab.label}
+                  </Text>
+                  <Icon 
+                    name="chevron-right" 
+                    size={24} 
+                    color="#ccc" 
+                    style={styles.tabArrow}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Section Content */}
+            {renderSectionContent()}
+          </ScrollView>
+        </>
+      )}
     </SafeAreaView>
   );
 }
@@ -389,5 +488,35 @@ const styles = StyleSheet.create({
   toggleLabel: {
     fontSize: 16,
     color: '#333',
+  },
+  editProfileContainer: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: 'white',
+  },
+  editProfileButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  saveProfileButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#4CAF50',
+    borderRadius: 20,
+  },
+  saveProfileText: {
+    color: '#fff',
+    fontWeight: '500',
+  },
+  cancelProfileButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 20,
+  },
+  cancelProfileText: {
+    color: '#666',
+    fontWeight: '500',
   },
 });
