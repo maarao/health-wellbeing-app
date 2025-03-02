@@ -3,6 +3,7 @@ import { Camera, CameraView, useCameraPermissions } from 'expo-camera';
 import * as FileSystem from 'expo-file-system';
 import * as WebBrowster from 'expo-web-browser';
 import * as React from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
@@ -23,6 +24,25 @@ export default function HomeScreen() {
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [userInput, setUserInput] = React.useState<string>('');
   const scrollViewRef = React.useRef<ScrollView>(null);
+  
+  React.useEffect(() => {
+    const loadData = async () => {
+      try {
+        const storedPhotoUri = await AsyncStorage.getItem('photoUri');
+        const storedMessages = await AsyncStorage.getItem('messages');
+        if (storedPhotoUri) {
+          setPhotoUri(storedPhotoUri);
+          setPhotoTaken(true);
+        }
+        if (storedMessages) {
+          setMessages(JSON.parse(storedMessages));
+        }
+      } catch (error) {
+        console.error('Error loading async storage data', error);
+      }
+    };
+    loadData();
+  }, []);
 
   const takePhoto = async () => {
     if (cameraRef.current) {
@@ -37,6 +57,9 @@ export default function HomeScreen() {
           to: fileUri,
         });
         console.log('Photo saved to:', fileUri);
+
+        // Save photoUri to AsyncStorage
+        await AsyncStorage.setItem('photoUri', fileUri);
 
         // Update the state with the photo URI and mark the photo as taken
         setPhotoUri(fileUri);
@@ -54,7 +77,30 @@ export default function HomeScreen() {
     setMessages([]);
   };
 
-  const startConversation = () => {
+  const analyzeImage = async () => {
+    console.log('analyzeImage called, photoUri:', photoUri);
+    if (!photoUri) {
+      console.log('No photo URI available');
+      return;
+    }
+    
+    try {
+      console.log('Fetching photo from URI:', photoUri);
+      const responseBlob = await fetch(photoUri);
+      console.log('Response status:', responseBlob.status, 'type:', responseBlob.type);
+      
+      console.log('Converting response to blob');
+      const blob = await responseBlob.blob();
+      console.log('Blob size:', blob.size, 'type:', blob.type);
+    } catch (error) {
+      console.error("Error analyzing image: ", error);
+    }
+  };
+
+  const startConversation = async () => {
+    if (photoUri) {
+      await analyzeImage();
+    }
     setInConversation(true);
     // Initial AI message
     setMessages([
@@ -77,6 +123,7 @@ export default function HomeScreen() {
     }];
     
     setMessages(newMessages);
+    AsyncStorage.setItem('messages', JSON.stringify(newMessages));
     setUserInput('');
     
     // Simulate AI response (in a real app, you would call an API here)
