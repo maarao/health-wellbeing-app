@@ -27,6 +27,12 @@ def synchronous_fetch(url):
 async def get_page_text_content(url):
     return await asyncio.to_thread(synchronous_fetch, url)
 
+async def scrape_multiple_urls(urls):
+   """Scrape multiple URLs concurrently using asynchronous multithreading."""
+   tasks = [get_page_text_content(url) for url in urls]
+   results = await asyncio.gather(*tasks)
+   return results
+
 if __name__ == "__main__":
     async def main():
         url = "https://www.example.com"
