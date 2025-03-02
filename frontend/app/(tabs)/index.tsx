@@ -12,6 +12,7 @@ import { ThemedView } from '@/components/ThemedView';
 export default function HomeScreen() {
   const cameraRef = React.useRef<CameraView>(null);
   const [photoUri, setPhotoUri] = React.useState<string | null>(null);
+  const [photoTaken, setPhotoTaken] = React.useState<boolean>(false);
 
   const takePhoto = async () => {
     if (cameraRef.current) {
@@ -27,24 +28,51 @@ export default function HomeScreen() {
         });
         console.log('Photo saved to:', fileUri);
 
-        // Update the state with the photo URI
+        // Update the state with the photo URI and mark the photo as taken
         setPhotoUri(fileUri);
+        setPhotoTaken(true);
       } else {
         console.log('Failed to take photo');
       }
     }
   };
 
+  const resetCamera = () => {
+    setPhotoTaken(false);
+    setPhotoUri(null);
+  };
+
   return (
     <ThemedView style={{ flex: 1 }}>
-      <CameraView ref={cameraRef} style={{ flex: 1 }} />
-      <ThemedView style={styles.buttonContainer}>
-        <Button title="Take Photo" onPress={takePhoto} />
-      </ThemedView>
-      {photoUri && (
-        <View style={styles.imageContainer}>
-          <Image source={{ uri: photoUri }} style={styles.image} />
-        </View>
+      {!photoTaken ? (
+        <>
+          <CameraView ref={cameraRef} style={{ flex: 1 }} />
+          <ThemedView style={styles.buttonContainer}>
+            <Button title="Take Photo" onPress={takePhoto} />
+          </ThemedView>
+        </>
+      ) : (
+        <ThemedView style={{ flex: 1, padding: 20, justifyContent: 'center' }}>
+          <ThemedText style={styles.headerText}>Photo Captured!</ThemedText>
+          
+          <View style={styles.resultContainer}>
+            <ThemedText style={styles.descriptionText}>
+              Here's the photo you took. You can continue or take another one.
+            </ThemedText>
+            
+            {photoUri && (
+              <Image source={{ uri: photoUri }} style={styles.resultImage} />
+            )}
+            
+            <View style={styles.buttonRow}>
+              <Button title="Take Another Photo" onPress={resetCamera} />
+              <Button title="Continue" onPress={() => {
+                // Add your logic to continue with this photo
+                console.log('Continuing with photo:', photoUri);
+              }} />
+            </View>
+          </View>
+        </ThemedView>
       )}
     </ThemedView>
   );
@@ -69,16 +97,43 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     position: 'absolute',
-    bottom: 300,
-    left: 200,
+    bottom: 200,
+    width: '100%',
+    alignItems: 'center',
   },
   imageContainer: {
-    position: 'absolute',
-    bottom: 300,
-    left: 200,
+    marginVertical: 20,
+    alignItems: 'center',
   },
   image: {
     width: 200,
     height: 200,
+  },
+  headerText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  descriptionText: {
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  resultContainer: {
+    alignItems: 'center',
+    gap: 20,
+  },
+  resultImage: {
+    width: 300,
+    height: 300,
+    borderRadius: 10,
+    marginVertical: 20,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    width: '100%',
+    marginTop: 20,
   },
 });
