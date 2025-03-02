@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -10,6 +10,7 @@ import {
   TextInput,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Define the section types
 type SectionType = 'identification' | 'medicalHistory' | 'allergies' | 'notifications' | 'medications';
@@ -45,6 +46,45 @@ export default function ProfileScreen() {
   const [user, setUser] = useState(initialUser);
   const [editedUser, setEditedUser] = useState(initialUser);
 
+  useEffect(() => {
+    saveProfileData();
+    loadProfileData();
+  }, []);
+
+  const saveProfileData = async () => {
+    try {
+      const profileData = {
+        allergies: user.allergies,
+        medications: user.medications,
+      };
+      await AsyncStorage.setItem('profileData', JSON.stringify(profileData));
+      console.log('Profile data saved');
+    } catch (error) {
+      console.error('Failed to save profile data', error);
+    }
+  };
+
+  const loadProfileData = async () => {
+    console.log('loadProfileData function called');
+    try {
+      const profileDataString = await AsyncStorage.getItem('profileData');
+      if (profileDataString) {
+        const profileData = JSON.parse(profileDataString);
+        setUser((prevUser) => ({
+          ...prevUser,
+          allergies: profileData.allergies,
+          medications: profileData.medications,
+        }));
+        console.log('Profile data loaded');
+        console.log(profileData);
+      } else {
+        console.log('No profile data found in local storage');
+      }
+    } catch (error) {
+      console.error('Failed to load profile data', error);
+    }
+  };
+
   const handleEditProfile = () => {
     setIsEditing(true);
   };
@@ -52,6 +92,7 @@ export default function ProfileScreen() {
   const handleSaveProfile = () => {
     setUser(editedUser);
     setIsEditing(false);
+    saveProfileData();
   };
 
   const handleCancelEdit = () => {
@@ -188,7 +229,7 @@ export default function ProfileScreen() {
                 <Icon name="chevron-right" size={24} color="#ccc" />
               </View>
             ))}
-            <TouchableOpacity style={styles.addButton}>
+            <TouchableOpacity onPress={saveProfileData} style={styles.addButton}>
               <Icon name="add" size={24} color="#fff" />
               <Text style={styles.addButtonText}>Add Medical Condition</Text>
             </TouchableOpacity>
@@ -207,7 +248,7 @@ export default function ProfileScreen() {
                 <Icon name="chevron-right" size={24} color="#ccc" />
               </View>
             ))}
-            <TouchableOpacity style={styles.addButton}>
+            <TouchableOpacity onPress={loadProfileData} style={styles.addButton}>
               <Icon name="add" size={24} color="#fff" />
               <Text style={styles.addButtonText}>Add Allergy</Text>
             </TouchableOpacity>

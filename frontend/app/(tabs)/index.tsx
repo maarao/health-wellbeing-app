@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Platform, Alert, Button, View, TextInput, ScrollView } from 'react-native';
+import { Image, StyleSheet, Platform, Alert, Button, View, TextInput, ScrollView, ActivityIndicator } from 'react-native';
 import { Camera, CameraView, useCameraPermissions } from 'expo-camera';
 import * as FileSystem from 'expo-file-system';
 import * as WebBrowster from 'expo-web-browser';
@@ -25,9 +25,7 @@ export default function HomeScreen() {
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [userInput, setUserInput] = React.useState<string>('');
   const scrollViewRef = React.useRef<ScrollView>(null);
-
-
-
+  const [loading, setLoading] = React.useState<boolean>(false);
 
   const takePhoto = async () => {
     if (cameraRef.current) {
@@ -89,6 +87,8 @@ export default function HomeScreen() {
       return null;
     }
 
+    setLoading(true);
+    let response;
     try {
       const base64Image = await convertImageToBase64(photoUri);
       console.log('base64Image length:', base64Image.length);
@@ -210,9 +210,15 @@ export default function HomeScreen() {
             )}
 
             <View style={styles.buttonRow}>
-              <Button title="Take Another Photo" onPress={resetCamera} />
-              <Button title="Continue" onPress={startConversation} />
+              <Button title="Take Another Photo" onPress={resetCamera} disabled={loading} />
+              <Button title="Continue" onPress={startConversation} disabled={loading} />
             </View>
+            {loading && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#4CAF50" />
+                <ThemedText style={styles.loadingText}>Analyzing image...</ThemedText>
+              </View>
+            )}
           </View>
         </ThemedView>
       ) : (
@@ -393,5 +399,14 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 20,
     marginRight: 10,
+  },
+  loadingContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
   },
 });
