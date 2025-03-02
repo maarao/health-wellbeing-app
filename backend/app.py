@@ -178,6 +178,8 @@ async def analyze(request: ImageRequest):
         "If the person needs to seek medical attention, but not immediately, please state that clearly."
         "If the person does not need to seek medical attention, please state that clearly."
         "If the person does not need to seek medical attention, but should monitor the condition, please state that clearly."
+        "Again, keep it concise. This will be shown on a mobile app, so keeping the repsonse short will make it much more digestible for the user."
+        "Don't use markdown or any other formatting."
     )
     try:
         diagnosis_response = which_pages_model.generate_content(prompt_diagnosis).text.strip()
