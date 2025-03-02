@@ -32,22 +32,30 @@ export default function CalendarScreen() {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const days = [
-    { date: currentDate, dayTasks: [] as Task[] },
-    { date: addDays(currentDate, 1), dayTasks: [] as Task[] },
-  ];
-
-  useEffect(() => {
-    days.forEach(day => {
-      day.dayTasks = tasks.filter(task => {
+    {
+      date: currentDate,
+      dayTasks: tasks.filter(task => {
         const taskDate = new Date(task.date);
         return (
-          taskDate.getDate() === day.date.getDate() &&
-          taskDate.getMonth() === day.date.getMonth() &&
-          taskDate.getFullYear() === day.date.getFullYear()
+          taskDate.getDate() === currentDate.getDate() &&
+          taskDate.getMonth() === currentDate.getMonth() &&
+          taskDate.getFullYear() === currentDate.getFullYear()
         );
-      });
-    });
-  }, [tasks, currentDate]);
+      })
+    },
+    {
+      date: addDays(currentDate, 1),
+      dayTasks: tasks.filter(task => {
+        const taskDate = new Date(task.date);
+        const nextDate = addDays(currentDate, 1);
+        return (
+          taskDate.getDate() === nextDate.getDate() &&
+          taskDate.getMonth() === nextDate.getMonth() &&
+          taskDate.getFullYear() === nextDate.getFullYear()
+        );
+      })
+    }
+  ];
 
   const handleAddTask = (newTask: TaskPayload) => {
     const taskWithId: Task = {
@@ -171,7 +179,7 @@ const styles = StyleSheet.create({
   },
   addButton: {
     position: 'absolute',
-    bottom: 24,
+    bottom: 100,
     right: 24,
     width: 56,
     height: 56,
