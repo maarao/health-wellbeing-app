@@ -4,3 +4,4 @@ beautifulsoup4
 zendriver
 google-generativeai
 pillow
+selenium
