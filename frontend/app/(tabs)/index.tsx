@@ -245,7 +245,7 @@ export default function HomeScreen() {
   }, [messages]);
 
   return (
-    <ThemedView style={{ flex: 1 }}>
+    <ThemedView style={{flex: 1, borderTopWidth: 80, borderLeftWidth: 12, borderRightWidth: 12, borderColor: 'black'}}>
       {!photoTaken ? (
         <>
           <CameraView ref={cameraRef} style={{ flex: 1 }} />
