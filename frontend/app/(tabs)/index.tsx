@@ -80,11 +80,11 @@ export default function HomeScreen() {
     }
   };
 
-  const analyzeImage = async () => {
+  const analyzeImage = async (): Promise<string | null> => {
     console.log('analyzeImage called, photoUri:', photoUri);
     if (!photoUri) {
       console.log('No photo URI available');
-      return;
+      return null;
     }
 
     setLoading(true);
@@ -93,11 +93,10 @@ export default function HomeScreen() {
       const base64Image = await convertImageToBase64(photoUri);
       console.log('base64Image length:', base64Image.length);
       
-      console.log('Before fetch call');
       const requestBody = { image: base64Image };
       console.log('Request body length:', JSON.stringify(requestBody).length);
       
-      response = await fetch(`${API_URL}/analyze`, {
+      const response = await fetch(`${API_URL}/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -111,28 +110,29 @@ export default function HomeScreen() {
         console.error('Server error:', response.status, errorText);
         throw new Error(`Server error: ${response.status} ${errorText}`);
       }
-      console.log('After fetch call');
 
       const responseData = await response.json();
       console.log('Backend response:', responseData);
 
+      return responseData.diagnosis || null;
+
     } catch (error) {
       console.error("Error analyzing image during fetch: ", error);
-    } finally {
-      setLoading(false);
+      return null;
     }
   };
 
   const startConversation = async () => {
+    let diagnosis = null;
     if (photoUri) {
-      await analyzeImage();
+      diagnosis = await analyzeImage();
     }
     setInConversation(true);
     // Initial AI message
     setMessages([
       {
         id: 1,
-        text: "I can see your photo! It looks like you're interested in health and wellbeing. What would you like to know about the image you've taken?",
+        text: diagnosis || "I couldn't analyze the photo. Please try again.",
         isUser: false
       }
     ]);

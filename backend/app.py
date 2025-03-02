@@ -84,8 +84,8 @@ async def analyze(request: ImageRequest):
     except Exception as e:
         return {"error": f"Error generating image description: {e}"}
     
-    if description == "NO INJURIES":
-        return {"result": "NO INJURIES"}
+    if "NO INJURIES" in description:
+        return {"diagnosis": "NO INJURIES"}
     
     # Step 2 & 3: Create search query, perform search, and evaluate results with retry logic
     max_retries = 3
@@ -178,6 +178,8 @@ async def analyze(request: ImageRequest):
         "If the person needs to seek medical attention, but not immediately, please state that clearly."
         "If the person does not need to seek medical attention, please state that clearly."
         "If the person does not need to seek medical attention, but should monitor the condition, please state that clearly."
+        "Again, keep it concise. This will be shown on a mobile app, so keeping the repsonse short will make it much more digestible for the user."
+        "Don't use markdown or any other formatting."
     )
     try:
         diagnosis_response = which_pages_model.generate_content(prompt_diagnosis).text.strip()
