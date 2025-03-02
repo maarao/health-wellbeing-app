@@ -279,7 +279,7 @@ export default function HomeScreen() {
           </View>
         </ThemedView>
       ) : (
-        <ThemedView style={{ flex: 1 }}>
+        <ThemedView style={{ marginTop: 40, flex: 1 }}>
           <ThemedView style={styles.chatHeader}>
             <Button title="Back" onPress={() => setInConversation(false)} />
             <ThemedText style={styles.chatHeaderTitle}>AI Health Assistant</ThemedText>
