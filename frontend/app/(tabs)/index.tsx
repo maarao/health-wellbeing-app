@@ -91,18 +91,28 @@ export default function HomeScreen() {
     let response;
     try {
       // Convert image to base64
+      // Convert image to base64
       const base64Image = await convertImageToBase64(photoUri);
+      console.log('base64Image length:', base64Image.length);
       
       console.log('Before fetch call');
+      const requestBody = { image: base64Image };
+      console.log('Request body length:', JSON.stringify(requestBody).length);
+      
       response = await fetch('http://192.168.1.221:8000/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        body: JSON.stringify({
-          image: base64Image
-        })
+        body: JSON.stringify(requestBody)
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server error:', response.status, errorText);
+        throw new Error(`Server error: ${response.status} ${errorText}`);
+      }
       console.log('After fetch call'); // Added log
 
       console.log('Fetch response:', response); // Log the entire response object
