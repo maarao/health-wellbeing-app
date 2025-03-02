@@ -69,10 +69,8 @@ async def analyze():
     links = [line.strip() for line in pages_links_text.splitlines() if line.strip().startswith("http")]
     
     # Step 4: Extract page contents
-    extracted_contents = {}
-    for link in links:
-        content = await page_content_extractor.get_page_text_content(link)
-        extracted_contents[link] = content
+    extracted_contents_list = await page_content_extractor.scrape_multiple_urls(links)
+    extracted_contents = dict(zip(links, extracted_contents_list))
     
     final_result = {
         "description": description,
