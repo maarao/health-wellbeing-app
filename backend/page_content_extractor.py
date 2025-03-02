@@ -13,7 +13,7 @@ async def get_page_text_content(url):
         str: The text content of the page, or an empty string if there was an error.
     """
     try:
-        browser = await nodriver.start()
+        browser = await nodriver.start(headless=True)
         tab = await browser.get(url)
         await asyncio.sleep(4)  # Wait for the page to load
         page_source = await tab.get_content()
