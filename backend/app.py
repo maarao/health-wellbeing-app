@@ -1,11 +1,17 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+from base64 import b64decode
 import google.generativeai as genai
 import google.generativeai.types as types
 import os
 from dotenv import load_dotenv
 from PIL import Image
 import io
+
+# Pydantic model for image request
+class ImageRequest(BaseModel):
+    image: str  # base64 encoded image data
 
 # Import asynchronous functions
 import google_search
@@ -32,11 +38,12 @@ image_model = genai.GenerativeModel('gemini-2.0-flash', generation_config=genera
 which_pages_model = genai.GenerativeModel('gemini-2.0-flash-thinking-exp-01-21', generation_config=generate_content_config)
 
 @app.post("/analyze")
-async def analyze(file: UploadFile = File(...)):
-    # Step 1: Load image and get description from uploaded file
+async def analyze(request: ImageRequest):
+    # Step 1: Load image and get description from base64 data
     try:
-        contents = await file.read()
-        img = Image.open(io.BytesIO(contents))
+        # Decode base64 image data
+        image_data = b64decode(request.image)
+        img = Image.open(io.BytesIO(image_data))
     except Exception as e:
         return {"error": f"Error processing uploaded image: {e}"}
     

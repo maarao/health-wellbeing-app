@@ -62,6 +62,25 @@ export default function HomeScreen() {
     setMessages([]);
   };
 
+  const convertImageToBase64 = async (uri: string): Promise<string> => {
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64String = (reader.result as string).split(',')[1];
+          resolve(base64String);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Error converting image to base64:', error);
+      throw error;
+    }
+  };
+
   const analyzeImage = async () => {
     console.log('analyzeImage called, photoUri:', photoUri);
     if (!photoUri) {
@@ -69,25 +88,28 @@ export default function HomeScreen() {
       return;
     }
 
-    const formData = new FormData();
-
-    // Check if photoUri exists and is not null before proceeding
-    if (photoUri) {
-      const photoBlob = await fetch(photoUri).then(r => r.blob());
-      formData.append('file', photoBlob, 'photo.jpg');
-    } else {
-      console.error('photoUri is null or undefined');
-      return; // Exit the function if photoUri is not valid
-    }
-
+    let response;
     try {
-      const response = await fetch('http://100.127.234.42:8000/analyze', {
+      // Convert image to base64
+      const base64Image = await convertImageToBase64(photoUri);
+      
+      console.log('Before fetch call');
+      response = await fetch('http://192.168.1.221:8000/analyze', {
         method: 'POST',
-        body: formData,
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          image: base64Image
+        })
       });
+      console.log('After fetch call'); // Added log
+
+      console.log('Fetch response:', response); // Log the entire response object
+      console.log('response.ok:', response.ok); // Log response.ok
+      console.log('response.status:', response.status); // Log response.status
+      console.log('response.statusText:', response.statusText); // Log response.statusText
+
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -100,7 +122,7 @@ export default function HomeScreen() {
       // For now, just console.log the response
 
     } catch (error) {
-      console.error("Error analyzing image: ", error);
+      console.error("Error analyzing image during fetch: ", error); // Updated log in catch block
     }
 
   };
@@ -282,7 +304,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     marginVertical: 20,
     alignItems: 'center',
-  },
+    },
   image: {
     width: 200,
     height: 200,
