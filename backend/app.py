@@ -84,8 +84,8 @@ async def analyze(request: ImageRequest):
     except Exception as e:
         return {"error": f"Error generating image description: {e}"}
     
-    if description == "NO INJURIES":
-        return {"result": "NO INJURIES"}
+    if "NO INJURIES" in description:
+        return {"diagnosis": "NO INJURIES"}
     
     # Step 2 & 3: Create search query, perform search, and evaluate results with retry logic
     max_retries = 3
