@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
   },
   frequencyButtonText: {
-    fontSize: 16,
+    fontSize: 12,
   },
   frequencyButtonTextActive: {
     color: 'white',
