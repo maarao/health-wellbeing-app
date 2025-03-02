@@ -91,24 +91,27 @@ async def analyze():
         f"Search Query: {search_query}\n"
         f"Relevant Links: {links}\n"
         f"Page Contents: {extracted_contents}\n\n"
-        "Determine if this injury, wound, or condition is treatable and provide one of the following responses as appropriate:\n"
-        "1. Provide the diagnosis as well as next steps (such as treatment).\n"
-        "2. Provide your best guess with a recommendation to get it checked by a specific specialist.\n"
-        "3. Advise that the condition seems severe and recommend contacting emergency services immediately.\n"
-        "Respond with ONLY one of the above responses."
+        "Based on the given data, provide a detailed diagnosis evaluation outlining your analysis of the injury, wound, or condition. "
+        "Recommend specific next steps for treatment or further evaluation. "
+        "Do not simply return a preset option; analyze the provided data and generate a computed diagnosis response."
+        "Make sure to include any relevant information from the page contents, but also keep it concise."
+        "If you cannot provide a diagnosis, please state that clearly."
+        "If the person needs to ssek immediate medical attention, please state that clearly."
+        "If the person needs to seek medical attention, but not immediately, please state that clearly."
+        "If the person does not need to seek medical attention, please state that clearly."
+        "If the person does not need to seek medical attention, but should monitor the condition, please state that clearly."
     )
     try:
-        diagnosis_response = which_pages_model.generate_content(prompt_diagnosis)
-        diagnosis = diagnosis_response.text.strip()
+        diagnosis_response = which_pages_model.generate_content(prompt_diagnosis).text.strip()
     except Exception as e:
-        diagnosis = f"Error generating diagnosis response: {e}"
+        diagnosis_response = f"Error generating diagnosis response: {e}"
     
     final_result = {
         "description": description,
         "search_query": search_query,
         "relevant_links": links,
         "page_contents": extracted_contents,
-        "diagnosis": diagnosis
+        "diagnosis": diagnosis_response
     }
     
     return JSONResponse(content=final_result)
