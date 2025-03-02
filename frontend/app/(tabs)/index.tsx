@@ -3,7 +3,7 @@ import { Camera, CameraView, useCameraPermissions } from 'expo-camera';
 import * as FileSystem from 'expo-file-system';
 import * as WebBrowster from 'expo-web-browser';
 import * as React from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
@@ -25,24 +25,24 @@ export default function HomeScreen() {
   const [userInput, setUserInput] = React.useState<string>('');
   const scrollViewRef = React.useRef<ScrollView>(null);
   
-  React.useEffect(() => {
-    const loadData = async () => {
-      try {
-        const storedPhotoUri = await AsyncStorage.getItem('photoUri');
-        const storedMessages = await AsyncStorage.getItem('messages');
-        if (storedPhotoUri) {
-          setPhotoUri(storedPhotoUri);
-          setPhotoTaken(true);
-        }
-        if (storedMessages) {
-          setMessages(JSON.parse(storedMessages));
-        }
-      } catch (error) {
-        console.error('Error loading async storage data', error);
-      }
-    };
-    loadData();
-  }, []);
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
 
   const takePhoto = async () => {
     if (cameraRef.current) {
@@ -58,8 +58,9 @@ export default function HomeScreen() {
         });
         console.log('Photo saved to:', fileUri);
 
-        // Save photoUri to AsyncStorage
-        await AsyncStorage.setItem('photoUri', fileUri);
+
+        // Save photoUri to AsyncStorage - No longer needed
+        
 
         // Update the state with the photo URI and mark the photo as taken
         setPhotoUri(fileUri);
@@ -85,16 +86,16 @@ export default function HomeScreen() {
     }
     
     try {
-      console.log('Fetching photo from URI:', photoUri);
-      const responseBlob = await fetch(photoUri);
-      console.log('Response status:', responseBlob.status, 'type:', responseBlob.type);
+      console.log('Analyzing image from URI:', photoUri);
+      // No need to fetch or convert to blob, just pass file URI
+      console.log('File URI for analysis:', photoUri);
+      // In a real app, you would send photoUri to the backend for analysis here
+      // Example: await analyzePhotoBackend(photoUri);
       
-      console.log('Converting response to blob');
-      const blob = await responseBlob.blob();
-      console.log('Blob size:', blob.size, 'type:', blob.type);
     } catch (error) {
       console.error("Error analyzing image: ", error);
     }
+    
   };
 
   const startConversation = async () => {
@@ -121,10 +122,10 @@ export default function HomeScreen() {
       text: userInput, 
       isUser: true 
     }];
-    
     setMessages(newMessages);
-    AsyncStorage.setItem('messages', JSON.stringify(newMessages));
+    
     setUserInput('');
+    
     
     // Simulate AI response (in a real app, you would call an API here)
     setTimeout(() => {
