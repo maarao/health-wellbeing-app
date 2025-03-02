@@ -134,42 +134,44 @@ export default function CalendarScreen() {
   // Renders the date selector at the top
   const renderDateSelector = () => {
     return (
-      <FlatList
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        data={days}
-        keyExtractor={(item, index) => `date-${index}`}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity 
-            style={[
-              styles.dateItem, 
-              selectedDateIndex === index ? styles.selectedDateItem : null
-            ]}
-            onPress={() => {
-              setSelectedDateIndex(index);
-              flatListRef.current?.scrollToIndex({ index, animated: true });
-            }}
-          >
-            <Text 
+      <View style={styles.dateSelectorContainer}>
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={days}
+          keyExtractor={(item, index) => `date-${index}`}
+          renderItem={({ item, index }) => (
+            <TouchableOpacity 
               style={[
-                styles.dateSelectorDay, 
-                selectedDateIndex === index ? styles.selectedDateText : null
+                styles.dateItem, 
+                selectedDateIndex === index ? styles.selectedDateItem : null
               ]}
+              onPress={() => {
+                setSelectedDateIndex(index);
+                flatListRef.current?.scrollToIndex({ index, animated: true });
+              }}
             >
-              {format(item.date, 'EEE')}
-            </Text>
-            <Text 
-              style={[
-                styles.dateSelectorDate, 
-                selectedDateIndex === index ? styles.selectedDateText : null
-              ]}
-            >
-              {format(item.date, 'd')}
-            </Text>
-          </TouchableOpacity>
-        )}
-        contentContainerStyle={styles.dateList}
-      />
+              <Text 
+                style={[
+                  styles.dateSelectorDay, 
+                  selectedDateIndex === index ? styles.selectedDateText : null
+                ]}
+              >
+                {format(item.date, 'EEE')}
+              </Text>
+              <Text 
+                style={[
+                  styles.dateSelectorDate, 
+                  selectedDateIndex === index ? styles.selectedDateText : null
+                ]}
+              >
+                {format(item.date, 'd')}
+              </Text>
+            </TouchableOpacity>
+          )}
+          contentContainerStyle={styles.dateList}
+        />
+      </View>
     );
   };
 
@@ -239,7 +241,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   header: {
-    padding: 16,
+    padding: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
@@ -269,7 +271,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dayHeader: {
-    height: 60,
+    height: 40, // Reduced height
     alignItems: 'center',
     justifyContent: 'center',
     borderBottomWidth: 1,
@@ -277,11 +279,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   dayName: {
-    fontSize: 16,
+    fontSize: 14, // Smaller font
     color: '#666666',
   },
   dayNumber: {
-    fontSize: 18,
+    fontSize: 16, // Smaller font
     fontWeight: 'bold',
     color: '#333333',
   },
@@ -310,29 +312,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0E0E0',
     marginTop: 10,
   },
-  dateList: {
-    paddingVertical: 10,
-    paddingHorizontal: 8,
+  dateSelectorContainer: {
+    height: 45, // Reduced height
     backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  dateList: {
+    paddingVertical: 6, // Reduced padding
+    paddingHorizontal: 8,
   },
   dateItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    marginHorizontal: 4, // Reduced margin
+    paddingHorizontal: 10, // Reduced padding
+    paddingVertical: 4, // Reduced padding
+    borderRadius: 16,
     backgroundColor: '#f0f0f0',
   },
   selectedDateItem: {
     backgroundColor: '#007AFF',
   },
   dateSelectorDay: {
-    fontSize: 13,
+    fontSize: 11, // Smaller font
     color: '#666',
   },
   dateSelectorDate: {
-    fontSize: 15,
+    fontSize: 13, // Smaller font
     fontWeight: 'bold',
     color: '#333',
   },
