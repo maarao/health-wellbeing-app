@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Platform, Alert, Button, View, TextInput, ScrollView } from 'react-native';
+import { Image, StyleSheet, Platform, Alert, Button, View, TextInput, ScrollView, ActivityIndicator } from 'react-native';
 import { Camera, CameraView, useCameraPermissions } from 'expo-camera';
 import * as FileSystem from 'expo-file-system';
 import * as WebBrowster from 'expo-web-browser';
@@ -25,9 +25,7 @@ export default function HomeScreen() {
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [userInput, setUserInput] = React.useState<string>('');
   const scrollViewRef = React.useRef<ScrollView>(null);
-
-
-
+  const [loading, setLoading] = React.useState<boolean>(false);
 
   const takePhoto = async () => {
     if (cameraRef.current) {
@@ -89,10 +87,9 @@ export default function HomeScreen() {
       return;
     }
 
+    setLoading(true);
     let response;
     try {
-      // Convert image to base64
-      // Convert image to base64
       const base64Image = await convertImageToBase64(photoUri);
       console.log('base64Image length:', base64Image.length);
       
@@ -114,28 +111,16 @@ export default function HomeScreen() {
         console.error('Server error:', response.status, errorText);
         throw new Error(`Server error: ${response.status} ${errorText}`);
       }
-      console.log('After fetch call'); // Added log
-
-      console.log('Fetch response:', response); // Log the entire response object
-      console.log('response.ok:', response.ok); // Log response.ok
-      console.log('response.status:', response.status); // Log response.status
-      console.log('response.statusText:', response.statusText); // Log response.statusText
-
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      console.log('After fetch call');
 
       const responseData = await response.json();
       console.log('Backend response:', responseData);
 
-      // Store response in AsyncStorage - if needed, implement AsyncStorage import and usage
-      // For now, just console.log the response
-
     } catch (error) {
-      console.error("Error analyzing image during fetch: ", error); // Updated log in catch block
+      console.error("Error analyzing image during fetch: ", error);
+    } finally {
+      setLoading(false);
     }
-
   };
 
   const startConversation = async () => {
@@ -225,9 +210,15 @@ export default function HomeScreen() {
             )}
 
             <View style={styles.buttonRow}>
-              <Button title="Take Another Photo" onPress={resetCamera} />
-              <Button title="Continue" onPress={startConversation} />
+              <Button title="Take Another Photo" onPress={resetCamera} disabled={loading} />
+              <Button title="Continue" onPress={startConversation} disabled={loading} />
             </View>
+            {loading && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#4CAF50" />
+                <ThemedText style={styles.loadingText}>Analyzing image...</ThemedText>
+              </View>
+            )}
           </View>
         </ThemedView>
       ) : (
@@ -408,5 +399,14 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 20,
     marginRight: 10,
+  },
+  loadingContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
   },
 });
