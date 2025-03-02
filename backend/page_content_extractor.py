@@ -1,18 +1,10 @@
 import time
+import asyncio
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 
-def get_page_text_content(url):
-    """
-    Fetches the page source of a given URL using Selenium and extracts the text content.
-    
-    Args:
-        url (str): The URL of the page to fetch.
-        
-    Returns:
-        str: The text content of the page, or an empty string if there was an error.
-    """
+def synchronous_fetch(url):
     driver = None
     try:
         options = Options()
@@ -32,10 +24,15 @@ def get_page_text_content(url):
         if driver:
             driver.quit()
 
+async def get_page_text_content(url):
+    return await asyncio.to_thread(synchronous_fetch, url)
+
 if __name__ == "__main__":
-    url = "https://www.example.com"
-    text = get_page_text_content(url)
-    if text:
-        print(f"Text content of {url}:\n{text[:500]}...")  # Print first 500 characters
-    else:
-        print(f"Could not retrieve text content from {url}")
+    async def main():
+        url = "https://www.example.com"
+        text = await get_page_text_content(url)
+        if text:
+            print(f"Text content of {url}:\n{text[:500]}...")  # Print first 500 characters
+        else:
+            print(f"Could not retrieve text content from {url}")
+    asyncio.run(main())
