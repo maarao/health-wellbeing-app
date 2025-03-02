@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 import google.generativeai as genai
 import os
-import asyncio
 from dotenv import load_dotenv
 from PIL import Image
 
