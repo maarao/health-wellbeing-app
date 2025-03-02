@@ -87,29 +87,76 @@ async def analyze(request: ImageRequest):
     if description == "NO INJURIES":
         return {"result": "NO INJURIES"}
     
-    # Step 2: Create search query and perform Google search
-    prompt_query = f"Create ONE good search query that would return helpful results for diagnosis and treatment from this description of an injury, wound, or other treatable condition. Don't response with anything else but the search query. Description: {description}"
-    try:
-        response = which_pages_model.generate_content(prompt_query)
-        search_query = response.text.strip()
-    except Exception as e:
-        return {"error": f"Error generating search query: {e}"}
-    search_results = await google_search.google_search(search_query)
+    # Step 2 & 3: Create search query, perform search, and evaluate results with retry logic
+    max_retries = 3
+    previous_queries = set()
+    attempt = 0
+    links = []
+    search_query = ""
+    search_results = []
+
+    while attempt < max_retries and not links:
+        attempt += 1
+        print(f"Search attempt {attempt} of {max_retries}")
+
+        # Generate search query with context from previous attempts
+        retry_context = f"\nPrevious unsuccessful queries: {', '.join(previous_queries)}" if previous_queries else ""
+        variation_guidance = " Generate a different approach from previous queries." if attempt > 1 else ""
+        
+        prompt_query = (
+            f"Create ONE good search query that would return helpful results for diagnosis and treatment "
+            f"from this description of an injury, wound, or other treatable condition. Focus on medical "
+            f"and healthcare resources.{variation_guidance} Don't respond with anything else but the "
+            f"search query. Description: {description}{retry_context}"
+        )
+        
+        try:
+            response = which_pages_model.generate_content(prompt_query)
+            search_query = response.text.strip()
+            
+            # Skip if we've tried this query before
+            if search_query in previous_queries:
+                print(f"Skipping duplicate query: {search_query}")
+                continue
+                
+            previous_queries.add(search_query)
+            print(f"Generated search query: {search_query}")
+            
+            search_results = await google_search.google_search(search_query)
+            
+            # Enhanced prompt for page relevance evaluation
+            prompt_pages = (
+                "From the search results provided, carefully evaluate and select pages that would be "
+                "relevant enough to help diagnose and treat this injury, wound, or other treatable "
+                "condition. Consider medical authority, relevance to the specific condition, and "
+                "treatment information. Only return links that you are confident will be helpful. "
+                "Don't respond with anything except the links to the relevant pages.\n\n"
+                f"Description: {description}\nSearch Results: {search_results}"
+            )
+            
+            pages_response = which_pages_model.generate_content(prompt_pages)
+            pages_links_text = pages_response.text.strip()
+            
+            links = [line.strip() for line in pages_links_text.splitlines() if line.strip().startswith("http")]
+            if links:
+                print(f"Found {len(links)} relevant links")
+            else:
+                print("No relevant links found, will retry with different query")
+                
+        except Exception as e:
+            print(f"Error during attempt {attempt}: {str(e)}")
+            if attempt == max_retries:
+                return {"error": f"Failed to find relevant results after {max_retries} attempts: {str(e)}"}
+            continue
     
-    # Step 3: Read search results and decide relevant pages
-    prompt_pages = (
-        "From the search results provided, decide which pages would be relevant enough to help diagnose and treat "
-        "this injury, wound, or other treatable condition described in the description. Don't respond with anything "
-        "except the links to the relevant pages. "
-        f"Description: {description}\nSearch Results: {search_results}"
-    )
-    try:
-        pages_response = which_pages_model.generate_content(prompt_pages)
-        pages_links_text = pages_response.text.strip()
-    except Exception as e:
-        return {"error": f"Error generating relevant pages: {e}"}
-    
-    links = [line.strip() for line in pages_links_text.splitlines() if line.strip().startswith("http")]
+    # If we still don't have any links after all retries
+    if not links:
+        return {
+            "error": (
+                f"Unable to find relevant medical resources after {max_retries} attempts. "
+                "Please try rephrasing the description or consult a healthcare professional directly."
+            )
+        }
     
     # Step 4: Extract page contents
     extracted_contents_list = await page_content_extractor.scrape_multiple_urls(links)
