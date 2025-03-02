@@ -409,6 +409,7 @@ const styles = StyleSheet.create({
   },
   chatContainer: {
     flex: 1,
+    marginBottom: 60,
   },
   chatContentContainer: {
     padding: 15,
@@ -443,11 +444,10 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: 'row',
-    padding: 10,
-    bottom: 60,
+    bottom: 50,
     paddingVertical: 16,
-    margin: 10,
-    borderTopWidth: 1,
+    margin: 8,
+    borderTopWidth: 2,
     borderTopColor: '#ccc',
   },
   input: {
