@@ -18,9 +18,9 @@ export default function ProfileScreen() {
   
   // Mock user data
   const user = {
-    name: 'John Doe',
-    email: 'johndoe@example.com',
-    avatar: 'https://via.placeholder.com/150',
+    name: 'Jake the Dog',
+    email: 'bacon@pancakes.com',
+    avatar: '../../../assets/images/jake_the_dog.png',
     dateOfBirth: '01/15/1985',
     gender: 'Male',
     bloodType: 'O+',
@@ -74,6 +74,11 @@ export default function ProfileScreen() {
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Weight</Text>
               <Text style={styles.infoValue}>{user.weight}</Text>
+            </View>
+            <View>
+                <TouchableOpacity style={styles.editProfileButton}>
+                    <Text style={styles.editProfileText}>Edit Profile</Text>
+                </TouchableOpacity>
             </View>
           </View>
         );
@@ -166,21 +171,17 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Profile Header with Avatar */}
       <View style={styles.profileHeader}>
         <View style={styles.avatarContainer}>
-          <Image 
-            source={{ uri: user.avatar }} 
+        <Image 
+            source={require('../../assets/images/jake_the_dog.png')} 
             style={styles.avatar}
-          />
+            />
           <TouchableOpacity style={styles.editAvatarButton}>
             <Icon name="edit" size={16} color="#fff" />
           </TouchableOpacity>
         </View>
         <Text style={styles.profileName}>{user.name}</Text>
-        <TouchableOpacity style={styles.editProfileButton}>
-          <Text style={styles.editProfileText}>Edit Profile</Text>
-        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.contentContainer}>
@@ -273,8 +274,15 @@ const styles = StyleSheet.create({
   editProfileButton: {
     paddingVertical: 5,
     paddingHorizontal: 15,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'lightgrey',
     borderRadius: 20,
+    width: '40%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+    left: '30%',
+    height: 30,
+
   },
   editProfileText: {
     color: '#666',
@@ -320,6 +328,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 15,
     padding: 15,
     marginBottom: 20,
+    alignContent: 'center',
   },
   infoRow: {
     flexDirection: 'row',
