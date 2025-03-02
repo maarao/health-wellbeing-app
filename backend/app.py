@@ -63,7 +63,7 @@ generate_content_config = types.GenerationConfig(
     )
 
 # Instantiate models
-image_model = genai.GenerativeModel('gemini-2.0-flash', generation_config=generate_content_config)
+image_model = genai.GenerativeModel('gemini-2.0-pro-exp-02-05', generation_config=generate_content_config)
 which_pages_model = genai.GenerativeModel('gemini-2.0-flash-thinking-exp-01-21', generation_config=generate_content_config)
 
 @app.post("/analyze")
