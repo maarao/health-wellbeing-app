@@ -78,11 +78,6 @@ export default function CalendarScreen() {
             // Task occurs on the same day of the month
             return getDate(currentDate) === getDate(taskDate);
           
-          case 'other':
-            // For custom frequency, we'd need more complex handling
-            // In this simplified example, we'll treat it like 'once'
-            return isSameDay(taskDate, currentDate);
-          
           default:
             return isSameDay(taskDate, currentDate);
         }
