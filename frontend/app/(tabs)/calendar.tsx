@@ -1,204 +1,235 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
   TouchableOpacity,
   Text,
-  Modal,
+  SafeAreaView,
   ScrollView,
-  TextInput,
-  Button,
 } from 'react-native';
-import { Calendar } from 'react-native-calendars';
+import { format, addDays } from 'date-fns';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import TaskModal, { TaskPayload } from '../../components/Calendar/TaskModal';
+// Updated import path to use the new TypeScript component
+import TaskItem from '../../components/Calendar/TaskItem';
 
 interface Task {
+  id: string;
+  title: string;
   description: string;
-  date: Date;
-  time: string;
+  date: string;
   frequency: string;
+  type: string;
 }
 
-export default function CalendarScreen() {
-  const [isAddTaskModalVisible, setIsAddTaskModalVisible] = useState(false);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [taskDescription, setTaskDescription] = useState('');
-  const [taskDate, setTaskDate] = useState(new Date());
-  const [taskTime, setTaskTime] = useState('');
-  const [taskFrequency, setTaskFrequency] = useState('');
+const HOUR_HEIGHT = 60;
+const START_HOUR = 7; // 7 AM
+const END_HOUR = 22; // 10 PM
 
-  const toggleAddTaskModal = () => {
-    setIsAddTaskModalVisible(!isAddTaskModalVisible);
+export default function CalendarScreen() {
+  const [currentDate] = useState(new Date());
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+
+  const days = [
+    { date: currentDate, dayTasks: [] as Task[] },
+    { date: addDays(currentDate, 1), dayTasks: [] as Task[] },
+  ];
+
+  useEffect(() => {
+    days.forEach(day => {
+      day.dayTasks = tasks.filter(task => {
+        const taskDate = new Date(task.date);
+        return (
+          taskDate.getDate() === day.date.getDate() &&
+          taskDate.getMonth() === day.date.getMonth() &&
+          taskDate.getFullYear() === day.date.getFullYear()
+        );
+      });
+    });
+  }, [tasks, currentDate]);
+
+  const handleAddTask = (newTask: TaskPayload) => {
+    const taskWithId: Task = {
+      id: Date.now().toString(),
+      ...newTask,
+    };
+    setTasks(prevTasks => [...prevTasks, taskWithId]);
+    setIsModalVisible(false);
   };
 
-  const handleAddTask = () => {
-    // Implement logic to add task to the tasks array
-    const newTask: Task = {
-      description: taskDescription,
-      date: taskDate,
-      time: taskTime,
-      frequency: taskFrequency,
+  const CalendarDay = ({
+    date,
+    tasks,
+  }: {
+    date: Date;
+    tasks: Task[];
+  }) => {
+    const renderTimeSlots = () => {
+      const slots = [];
+      for (let hour = START_HOUR; hour <= END_HOUR; hour++) {
+        slots.push(
+          <View key={hour} style={styles.timeSlot}>
+            <Text style={styles.timeText}>
+              {hour > 12 ? `${hour - 12} PM` : hour === 12 ? '12 PM' : `${hour} AM`}
+            </Text>
+            <View style={styles.hourLine} />
+          </View>
+        );
+      }
+      return slots;
     };
-    setTasks([...tasks, newTask]);
-    toggleAddTaskModal();
+
+    const renderTasks = () => {
+      return tasks.map(task => {
+        const taskDate = new Date(task.date);
+        const hour = taskDate.getHours();
+        const minutes = taskDate.getMinutes();
+        const top =
+          (hour - START_HOUR) * HOUR_HEIGHT +
+          (minutes / 60) * HOUR_HEIGHT;
+
+        return (
+          <TaskItem
+            key={task.id}
+            task={task}
+            style={{
+              position: 'absolute',
+              top,
+              left: 70,
+              right: 10,
+            }}
+          />
+        );
+      });
+    };
+
+    return (
+      <View style={styles.dayContainer}>
+        <View style={styles.dayHeader}>
+          <Text style={styles.dayName}>{format(date, 'EEE')}</Text>
+          <Text style={styles.dayNumber}>{format(date, 'd')}</Text>
+        </View>
+        <ScrollView style={styles.timeSlotsContainer}>
+          <View style={styles.contentContainer}>
+            {renderTimeSlots()}
+            {renderTasks()}
+          </View>
+        </ScrollView>
+      </View>
+    );
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView>
-        {/* <Calendar
-          style={styles.calendar}
-          current={'2025-03-01'}
-          minDate={'2023-01-01'}
-          maxDate={'2027-12-31'}
-          onDayPress={(day: any) => {
-            console.log('selected day', day);
-          }}
-          monthFormat={'yyyy MM'}
-          hideExtraDays={true}
-          onPressArrowLeft={(subtractMonth: () => void) => subtractMonth()}
-          onPressArrowRight={(addMonth: () => void) => addMonth()}
-        /> */}
-
-        <View style={styles.scheduleContainer}>
-          <Text>Today's Schedule:</Text>
-          {tasks
-            .filter((task) => {
-              const today = new Date();
-              const taskDateOnly = new Date(task.date.getFullYear(), task.date.getMonth(), task.date.getDate());
-              return (
-                taskDateOnly.getFullYear() === today.getFullYear() &&
-                taskDateOnly.getMonth() === today.getMonth() &&
-                taskDateOnly.getDate() === today.getDate()
-              );
-            })
-            .map((task, index) => (
-              <View key={index} style={styles.taskItem}>
-                <Text>{task.description}</Text>
-                <Text>{task.time}</Text>
-              </View>
-            ))}
-
-          <Text>Tomorrow's Schedule:</Text>
-          {tasks
-            .filter((task) => {
-              const tomorrow = new Date();
-              tomorrow.setDate(tomorrow.getDate() + 1);
-              const taskDateOnly = new Date(task.date.getFullYear(), task.date.getMonth(), task.date.getDate());
-              return (
-                taskDateOnly.getFullYear() === tomorrow.getFullYear() &&
-                taskDateOnly.getMonth() === tomorrow.getMonth() &&
-                taskDateOnly.getDate() === tomorrow.getDate()
-              );
-            })
-            .map((task, index) => (
-              <View key={index} style={styles.taskItem}>
-                <Text>{task.description}</Text>
-                <Text>{task.time}</Text>
-              </View>
-            ))}
-        </View>
-      </ScrollView>
-
-      <TouchableOpacity style={styles.addButton} onPress={toggleAddTaskModal}>
-        <Text style={styles.addButtonText}>+</Text>
-      </TouchableOpacity>
-
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={isAddTaskModalVisible}
-        onRequestClose={() => {
-          setIsAddTaskModalVisible(false);
-        }}
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Health Schedule</Text>
+      </View>
+      <View style={styles.calendarContainer}>
+        {days.map((day, index) => (
+          <CalendarDay
+            key={index}
+            date={day.date}
+            tasks={day.dayTasks}
+          />
+        ))}
+      </View>
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => setIsModalVisible(true)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text>Add Task</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Task Description"
-              value={taskDescription}
-              onChangeText={setTaskDescription}
-            />
-            {/* Date, Time, Frequency pickers will be added here */}
-            <Calendar
-              style={styles.calendar}
-              current={taskDate.toISOString().split('T')[0]}
-              onDayPress={(day: any) => {
-                setTaskDate(new Date(day.dateString));
-              }}
-              monthFormat={'yyyy MM'}
-              hideExtraDays={true}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Time"
-              value={taskTime}
-              onChangeText={setTaskTime}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Frequency"
-              value={taskFrequency}
-              onChangeText={setTaskFrequency}
-            />
-            <Button title="Save" onPress={handleAddTask} />
-            <Button title="Cancel" onPress={toggleAddTaskModal} />
-          </View>
-        </View>
-      </Modal>
-    </View>
+        <Icon name="add" size={24} color="#FFF" />
+      </TouchableOpacity>
+      <TaskModal
+        visible={isModalVisible}
+        onClose={() => setIsModalVisible(false)}
+        onSave={handleAddTask}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F5F5F5',
   },
-  calendar: {
-    borderWidth: 1,
-    borderColor: 'gray',
-    height: 350,
+  header: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
   },
-  scheduleContainer: {
-    padding: 20,
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333333',
+  },
+  calendarContainer: {
+    flexDirection: 'row',
+    flex: 1,
   },
   addButton: {
     position: 'absolute',
-    bottom: 20,
-    right: 20,
-    backgroundColor: 'blue',
-    width: 60,
-    height: 60,
-  },
-  addButtonText: {
-    color: 'white',
-    fontSize: 30,
-  },
-  modalContainer: {
-    flex: 1,
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
     elevation: 5,
-    width: '80%',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 5,
+  dayContainer: {
+    flex: 1,
+    borderRightWidth: 0.5,
+    borderRightColor: '#E0E0E0',
   },
-  taskItem: {
-    padding: 10,
+  dayHeader: {
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#E0E0E0',
+    backgroundColor: '#FFFFFF',
+  },
+  dayName: {
+    fontSize: 14,
+    color: '#666666',
+  },
+  dayNumber: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333333',
+  },
+  timeSlotsContainer: {
+    flex: 1,
+  },
+  contentContainer: {
+    position: 'relative',
+    height: (END_HOUR - START_HOUR + 1) * HOUR_HEIGHT,
+  },
+  timeSlot: {
+    height: HOUR_HEIGHT,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  timeText: {
+    width: 60,
+    fontSize: 12,
+    color: '#999999',
+    paddingLeft: 8,
+    paddingTop: 2,
+  },
+  hourLine: {
+    height: 1,
+    flex: 1,
+    backgroundColor: '#E0E0E0',
+    marginTop: 10,
   },
 });
