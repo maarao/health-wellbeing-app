@@ -1,5 +1,6 @@
 import time
 import asyncio
+import concurrent.futures
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
@@ -27,11 +28,13 @@ def synchronous_fetch(url):
 async def get_page_text_content(url):
     return await asyncio.to_thread(synchronous_fetch, url)
 
-async def scrape_multiple_urls(urls):
-   """Scrape multiple URLs concurrently using asynchronous multithreading."""
-   tasks = [get_page_text_content(url) for url in urls]
-   results = await asyncio.gather(*tasks)
-   return results
+async def scrape_multiple_urls(urls, thread_count=5):
+    """Scrape multiple URLs concurrently using multithreading with a custom thread count."""
+    loop = asyncio.get_running_loop()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
+        tasks = [loop.run_in_executor(executor, synchronous_fetch, url) for url in urls]
+        results = await asyncio.gather(*tasks)
+    return results
 
 if __name__ == "__main__":
     async def main():
