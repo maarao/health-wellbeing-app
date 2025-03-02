@@ -38,6 +38,7 @@ export default function TabLayout() {
         // Add bottom padding to content to prevent overlap with tab bar
         contentStyle: {
           paddingBottom: 60,
+          marginTop: 20, // Add top margin here
         }
       }}>
       <Tabs.Screen
