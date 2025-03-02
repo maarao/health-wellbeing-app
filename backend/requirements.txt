@@ -1,6 +1,6 @@
 fastapi[standard]
 uvicorn
 beautifulsoup4
-nodriver
+zendriver
 google-generativeai
 pillow

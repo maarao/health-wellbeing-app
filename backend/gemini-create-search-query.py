@@ -2,7 +2,6 @@ from fastapi import FastAPI
 import google.generativeai as genai
 import os
 from dotenv import load_dotenv
-from google.generativeai import types
 
 
 load_dotenv()

@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-import nodriver
+import zendriver as nodriver
 import asyncio
 
 async def google_search(query):
@@ -15,7 +15,7 @@ async def google_search(query):
     """
     try:
         # Initialize nodriver
-        browser = await nodriver.start()
+        browser = await nodriver.start(headless=True)
 
         # Construct the Google search URL
         url = f"https://www.google.com/search?q={query}"

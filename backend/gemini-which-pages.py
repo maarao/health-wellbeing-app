@@ -18,7 +18,7 @@ async def root():
     description = "The image shows a contusion (bruise) on the upper arm. The bruise is dark purple in the center, with a yellowish hue around the edges, indicating that it is in the healing process."
     if description == "NO INJURIES":
         return "NO INJURIES"
-    f = open("backend/results.txt", "r")
+    f = open("results.txt", "r")
     search_results = f.read()
     prompt = f"From the search results provided, decide which pages would be relevant enough to help diagnose and treat this injury, wound, or other treatable condition described in the description. Don't respond with anything except the links to the relevant pages. Description: {description}\nSearch Results: {search_results}"
     try:

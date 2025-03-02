@@ -13,7 +13,7 @@ app = FastAPI()
 API_KEY = os.environ.get("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel('gemini-2.0-flash')
-image_path = 'backend/bruise.jpg'
+image_path = 'bruise.jpg'
 try:
     img = Image.open(image_path)
 except FileNotFoundError:
