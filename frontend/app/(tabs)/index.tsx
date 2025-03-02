@@ -3,6 +3,7 @@ import { Camera, CameraView, useCameraPermissions } from 'expo-camera';
 import * as FileSystem from 'expo-file-system';
 import * as WebBrowster from 'expo-web-browser';
 import * as React from 'react';
+import { API_URL } from '@env';
 
 
 import { HelloWave } from '@/components/HelloWave';
@@ -99,7 +100,7 @@ export default function HomeScreen() {
       const requestBody = { image: base64Image };
       console.log('Request body length:', JSON.stringify(requestBody).length);
       
-      response = await fetch('http://192.168.1.221:8000/analyze', {
+      response = await fetch(`${API_URL}/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
