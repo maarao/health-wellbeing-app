@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 import google.generativeai as genai
 import google.generativeai.types as types
 import os
@@ -110,7 +111,7 @@ async def analyze():
         "diagnosis": diagnosis
     }
     
-    return final_result
+    return JSONResponse(content=final_result)
 
 if __name__ == "__main__":
     import uvicorn
