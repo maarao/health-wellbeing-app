@@ -11,7 +11,7 @@ import io
 
 from fastapi import HTTPException, status
 
-# Pydantic model for image request
+# Pydantic models for requests
 class ImageRequest(BaseModel):
     image: str  # base64 encoded image data
     
@@ -31,6 +31,16 @@ class ImageRequest(BaseModel):
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Invalid base64 image data: {str(e)}"
             )
+
+class ChatRequest(BaseModel):
+    message: str
+    context: dict = {
+        "description": "",
+        "diagnosis": "",
+        "search_query": "",
+        "relevant_links": [],
+        "page_contents": {}
+    }
 
 # Import asynchronous functions
 import google_search
@@ -53,7 +63,7 @@ generate_content_config = types.GenerationConfig(
     )
 
 # Instantiate models
-image_model = genai.GenerativeModel('gemini-2.0-flash', generation_config=generate_content_config)
+image_model = genai.GenerativeModel('gemini-2.0-pro-exp-02-05', generation_config=generate_content_config)
 which_pages_model = genai.GenerativeModel('gemini-2.0-flash-thinking-exp-01-21', generation_config=generate_content_config)
 
 @app.post("/analyze")
@@ -169,16 +179,21 @@ async def analyze(request: ImageRequest):
         f"Search Query: {search_query}\n"
         f"Relevant Links: {links}\n"
         f"Page Contents: {extracted_contents}\n\n"
-        "Based on the given data, provide a detailed diagnosis evaluation outlining your analysis of the injury, wound, or condition. "
-        "Recommend specific next steps for treatment or further evaluation. "
-        "Do not simply return a preset option; analyze the provided data and generate a computed diagnosis response."
-        "Make sure to include any relevant information from the page contents, but also keep it concise."
-        "If you cannot provide a diagnosis, please state that clearly."
-        "If the person needs to ssek immediate medical attention, please state that clearly."
-        "If the person needs to seek medical attention, but not immediately, please state that clearly."
-        "If the person does not need to seek medical attention, please state that clearly."
-        "If the person does not need to seek medical attention, but should monitor the condition, please state that clearly."
-        "Again, keep it concise. This will be shown on a mobile app, so keeping the repsonse short will make it much more digestible for the user."
+        "You are a caring healthcare professional providing a thoughtful analysis. "
+        "Maintain a warm, friendly, and empathetic tone throughout your response. "
+        "Based on the given data, provide a clear and reassuring diagnosis evaluation. "
+        "Remember that the person may be worried or in pain, so be supportive while remaining honest and direct.\n\n"
+        "In your response:\n"
+        "1. Acknowledge their situation with empathy\n"
+        "2. Provide a clear analysis of their condition\n"
+        "3. Outline specific next steps or recommendations\n"
+        "4. Be explicit about the urgency level:\n"
+        "   - If immediate medical attention is needed, explain why clearly but calmly\n"
+        "   - If medical attention is needed but not urgent, provide a timeframe\n"
+        "   - If self-care is appropriate, give clear guidelines\n"
+        "   - If monitoring is needed, explain what to watch for\n\n"
+        "Keep your response no more than 5 sentences and easily digestible for a mobile app interface. "
+        "Avoid medical jargon where possible, or explain it when necessary. "
         "Don't use markdown or any other formatting."
     )
     try:
@@ -195,6 +210,40 @@ async def analyze(request: ImageRequest):
     }
     
     return JSONResponse(content=final_result)
+
+@app.post("/chat")
+async def chat(request: ChatRequest):
+    try:
+        # Create a prompt that includes the context and current message
+        prompt = (
+            "You are a knowledgeable healthcare professional assistant. "
+            "Maintain a warm, professional, and empathetic tone while providing accurate medical guidance. "
+            "Use the following context about the patient's condition to inform your response.\n\n"
+            f"Context:\n"
+            f"Description of condition: {request.context['description']}\n"
+            f"Initial diagnosis: {request.context['diagnosis']}\n"
+            f"Relevant medical information from trusted sources: {request.context['page_contents']}\n\n"
+            f"Patient's message: {request.message}\n\n"
+            "In your response:\n"
+            "1. Acknowledge their concerns or questions with empathy\n"
+            "2. Provide clear, accurate information based on the context\n"
+            "3. Be honest about any limitations in your knowledge\n"
+            "4. If they need medical attention, remind them professionally but firmly\n"
+            "5. Use simple, understandable language while maintaining professionalism\n"
+            "6. Focus on being supportive and reassuring while staying factual\n\n"
+            "Keep your response concise and easily readable on a mobile app interface. "
+            "Avoid technical jargon unless necessary, and explain medical terms when used. "
+            "Don't use any markdown formatting."
+        )
+        
+        response = which_pages_model.generate_content(prompt)
+        return JSONResponse(content={"response": response.text.strip()})
+        
+    except Exception as e:
+        return JSONResponse(
+            content={"error": f"Error generating response: {str(e)}"},
+            status_code=500
+        )
 
 if __name__ == "__main__":
     import uvicorn
