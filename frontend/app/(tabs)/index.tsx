@@ -120,7 +120,7 @@ export default function HomeScreen() {
         <>
           <CameraView ref={cameraRef} style={{ flex: 1 }} />
           <ThemedView style={styles.buttonContainer}>
-            <Button title="Take Photo" onPress={takePhoto} />
+            <Button title='' onPress={takePhoto} />
           </ThemedView>
         </>
       ) : !inConversation ? (
@@ -194,6 +194,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   titleContainer: {
+
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -211,9 +212,17 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     position: 'absolute',
-    bottom: 200,
-    width: '100%',
+    bottom: 60,
+    padding: 8,
+    margin: 8,
+    width: 75,
+    height: 75,
+    backgroundColor: 'white',
+    borderColor: 'black',
+    borderWidth: 8,
+    alignSelf: 'center',
     alignItems: 'center',
+    borderRadius: 2000,
   },
   imageContainer: {
     marginVertical: 20,
@@ -299,7 +308,9 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     padding: 10,
-    bottom: 50,
+    bottom: 60,
+    paddingVertical: 16,
+    margin: 10,
     borderTopWidth: 1,
     borderTopColor: '#ccc',
   },
