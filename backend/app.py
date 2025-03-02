@@ -1,10 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 import google.generativeai as genai
 import google.generativeai.types as types
 import os
 from dotenv import load_dotenv
 from PIL import Image
+import io
 
 # Import asynchronous functions
 import google_search
@@ -30,16 +31,14 @@ generate_content_config = types.GenerationConfig(
 image_model = genai.GenerativeModel('gemini-2.0-flash', generation_config=generate_content_config)
 which_pages_model = genai.GenerativeModel('gemini-2.0-flash-thinking-exp-01-21', generation_config=generate_content_config)
 
-@app.get("/analyze")
-async def analyze():
-    # Step 1: Load image and get description
-    image_path = 'bruise.jpg'
+@app.post("/analyze")
+async def analyze(file: UploadFile = File(...)):
+    # Step 1: Load image and get description from uploaded file
     try:
-        img = Image.open(image_path)
-    except FileNotFoundError:
-        return {"error": f"Image file not found at {image_path}"}
+        contents = await file.read()
+        img = Image.open(io.BytesIO(contents))
     except Exception as e:
-        return {"error": f"Error opening image: {e}"}
+        return {"error": f"Error processing uploaded image: {e}"}
     
     prompt = (
         "Describe the injury, wound, or other *treatable* conditions shown in the image. "
