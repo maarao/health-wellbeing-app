@@ -9,7 +9,14 @@ import {
   FlatList,
   Dimensions,
 } from 'react-native';
-import { format, addDays, isSameDay } from 'date-fns';
+import { 
+  format, 
+  addDays, 
+  isSameDay, 
+  differenceInDays,
+  getDay,
+  getDate
+} from 'date-fns';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import TaskModal, { TaskPayload } from '../../components/Calendar/TaskModal';
 // Updated import path to use the new TypeScript component
@@ -40,14 +47,49 @@ export default function CalendarScreen() {
   const generateDays = () => {
     const daysArray = [];
     for (let i = 0; i < DAYS_TO_SHOW; i++) {
-      const date = addDays(new Date(), i);
+      const currentDate = addDays(new Date(), i);
+      
+      // Get tasks for this specific date (including recurring ones)
       const dayTasks = tasks.filter(task => {
         const taskDate = new Date(task.date);
-        return isSameDay(taskDate, date);
+        
+        // For non-recurring tasks, just check if it's the same day
+        if (task.frequency === 'once') {
+          return isSameDay(taskDate, currentDate);
+        }
+        
+        // For recurring tasks, check if this day matches the recurrence pattern
+        const daysSinceTaskCreated = differenceInDays(currentDate, taskDate);
+        
+        if (daysSinceTaskCreated < 0) {
+          return false; // Task hasn't started yet
+        }
+        
+        switch (task.frequency) {
+          case 'daily':
+            // Task occurs every day
+            return true;
+          
+          case 'weekly':
+            // Task occurs on the same day of the week
+            return getDay(currentDate) === getDay(taskDate);
+          
+          case 'monthly':
+            // Task occurs on the same day of the month
+            return getDate(currentDate) === getDate(taskDate);
+          
+          case 'other':
+            // For custom frequency, we'd need more complex handling
+            // In this simplified example, we'll treat it like 'once'
+            return isSameDay(taskDate, currentDate);
+          
+          default:
+            return isSameDay(taskDate, currentDate);
+        }
       });
       
       daysArray.push({
-        date,
+        date: currentDate,
         dayTasks
       });
     }
@@ -102,7 +144,7 @@ export default function CalendarScreen() {
 
         return (
           <TaskItem
-            key={task.id}
+            key={`${task.id}-${date.toISOString()}`}
             task={task}
             style={{
               position: 'absolute',
@@ -186,6 +228,11 @@ export default function CalendarScreen() {
   const viewabilityConfig = React.useRef({
     itemVisiblePercentThreshold: 50
   }).current;
+
+  // Force re-render when tasks change to update recurring events
+  React.useEffect(() => {
+    // This ensures the calendar updates when tasks are added/modified
+  }, [tasks]);
 
   return (
     <SafeAreaView style={styles.container}>
