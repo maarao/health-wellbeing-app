@@ -17,6 +17,14 @@ type Message = {
   isUser: boolean;
 };
 
+type DiagnosisContext = {
+  description: string;
+  diagnosis: string;
+  search_query: string;
+  relevant_links: string[];
+  page_contents: Record<string, string>;
+};
+
 export default function HomeScreen() {
   const cameraRef = React.useRef<CameraView>(null);
   const [photoUri, setPhotoUri] = React.useState<string | null>(null);
@@ -26,6 +34,7 @@ export default function HomeScreen() {
   const [userInput, setUserInput] = React.useState<string>('');
   const scrollViewRef = React.useRef<ScrollView>(null);
   const [loading, setLoading] = React.useState<boolean>(false);
+  const [messageContext, setMessageContext] = React.useState<DiagnosisContext | null>(null);
 
   const takePhoto = async () => {
     if (cameraRef.current) {
@@ -80,7 +89,7 @@ export default function HomeScreen() {
     }
   };
 
-  const analyzeImage = async (): Promise<string | null> => {
+  const analyzeImage = async (): Promise<DiagnosisContext | null> => {
     console.log('analyzeImage called, photoUri:', photoUri);
     if (!photoUri) {
       console.log('No photo URI available');
@@ -114,33 +123,64 @@ export default function HomeScreen() {
       const responseData = await response.json();
       console.log('Backend response:', responseData);
 
-      return responseData.diagnosis || null;
+      if (responseData.error) {
+        throw new Error(responseData.error);
+      }
+
+      return {
+        description: responseData.description || '',
+        diagnosis: responseData.diagnosis || '',
+        search_query: responseData.search_query || '',
+        relevant_links: responseData.relevant_links || [],
+        page_contents: responseData.page_contents || {}
+      };
 
     } catch (error) {
       console.error("Error analyzing image during fetch: ", error);
+      Alert.alert('Error', 'Failed to analyze image. Please try again.');
       return null;
     }
   };
 
   const startConversation = async () => {
-    let diagnosis = null;
+    let analysisResult = null;
     if (photoUri) {
-      diagnosis = await analyzeImage();
-    }
-    setInConversation(true);
-    // Initial AI message
-    setMessages([
-      {
-        id: 1,
-        text: diagnosis || "I couldn't analyze the photo. Please try again.",
-        isUser: false
+      analysisResult = await analyzeImage();
+      if (analysisResult) {
+        const {
+          description,
+          diagnosis,
+          search_query,
+          relevant_links,
+          page_contents
+        } = analysisResult;
+
+        // Store the context for future chat messages
+        setMessageContext({
+          description,
+          diagnosis,
+          search_query,
+          relevant_links,
+          page_contents
+        });
+
+        setInConversation(true);
+        // Initial AI message
+        setMessages([
+          {
+            id: 1,
+            text: diagnosis || "I couldn't analyze the photo. Please try again.",
+            isUser: false
+          }
+        ]);
       }
-    ]);
+    }
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!userInput.trim()) return;
 
+    setLoading(true);
     // Add user message
     const newMessages = [...messages, {
       id: messages.length + 1,
@@ -151,31 +191,48 @@ export default function HomeScreen() {
 
     setUserInput('');
 
+    try {
+      const response = await fetch(`${API_URL}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userInput,
+          context: {
+            description: messageContext?.description || '',
+            diagnosis: messageContext?.diagnosis || '',
+            search_query: messageContext?.search_query || '',
+            relevant_links: messageContext?.relevant_links || [],
+            page_contents: messageContext?.page_contents || {}
+          }
+        })
+      });
 
-    // Simulate AI response (in a real app, you would call an API here)
-    setTimeout(() => {
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
       setMessages(current => [
         ...current,
         {
           id: current.length + 1,
-          text: getAIResponse(userInput),
+          text: data.response,
           isUser: false
         }
       ]);
-    }, 1000);
-  };
-
-  // Simple function to simulate AI responses
-  const getAIResponse = (input: string) => {
-    const responses = [
-      "That's a great question about your health! Based on what I can see, I'd recommend focusing on balanced nutrition and regular exercise.",
-      "From the image you shared, it seems like you're on the right track. Would you like some specific wellness tips?",
-      "Interesting point! Health is about both physical and mental wellbeing. Have you been practicing any mindfulness lately?",
-      "I notice some patterns in your photo that suggest you might benefit from more hydration throughout the day.",
-      "Your photo shows good progress! Remember that consistency is key to achieving your health goals."
-    ];
-
-    return responses[Math.floor(Math.random() * responses.length)];
+    } catch (error) {
+      console.error('Error sending message:', error);
+      Alert.alert('Error', 'Failed to send message. Please try again.');
+      
+      // Remove user's message if we couldn't get a response
+      setMessages(messages);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Scroll to bottom whenever messages change

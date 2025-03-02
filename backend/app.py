@@ -11,7 +11,7 @@ import io
 
 from fastapi import HTTPException, status
 
-# Pydantic model for image request
+# Pydantic models for requests
 class ImageRequest(BaseModel):
     image: str  # base64 encoded image data
     
@@ -31,6 +31,16 @@ class ImageRequest(BaseModel):
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Invalid base64 image data: {str(e)}"
             )
+
+class ChatRequest(BaseModel):
+    message: str
+    context: dict = {
+        "description": "",
+        "diagnosis": "",
+        "search_query": "",
+        "relevant_links": [],
+        "page_contents": {}
+    }
 
 # Import asynchronous functions
 import google_search
@@ -195,6 +205,33 @@ async def analyze(request: ImageRequest):
     }
     
     return JSONResponse(content=final_result)
+
+@app.post("/chat")
+async def chat(request: ChatRequest):
+    try:
+        # Create a prompt that includes the context and current message
+        prompt = (
+            "You are a medical AI assistant. Use the following context about the patient's condition "
+            "to provide a helpful response to their message. Be empathetic and clear in your responses. "
+            "If you're unsure about something, be honest about it. If they need immediate medical attention, "
+            "remind them of that.\n\n"
+            f"Context:\n"
+            f"Description of condition: {request.context['description']}\n"
+            f"Initial diagnosis: {request.context['diagnosis']}\n"
+            f"Relevant medical information from trusted sources: {request.context['page_contents']}\n\n"
+            f"Patient's message: {request.message}\n\n"
+            "Respond in a clear, concise manner suitable for a mobile app interface. "
+            "Don't use any markdown formatting."
+        )
+        
+        response = which_pages_model.generate_content(prompt)
+        return JSONResponse(content={"response": response.text.strip()})
+        
+    except Exception as e:
+        return JSONResponse(
+            content={"error": f"Error generating response: {str(e)}"},
+            status_code=500
+        )
 
 if __name__ == "__main__":
     import uvicorn
