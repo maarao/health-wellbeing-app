@@ -1,22 +1,22 @@
-// Fixed TaskModal with complete styles and updated prop types
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  Modal, 
-  StyleSheet, 
-  TextInput, 
-  TouchableOpacity, 
+import {
+  Modal,
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  Platform,
+  KeyboardAvoidingView,
   ScrollView,
-  Platform
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import SegmentedControl from '@react-native-segmented-control/segmented-control';
-
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { Picker } from '@react-native-picker/picker';
 export interface TaskPayload {
   title: string;
   description: string;
-  date: string;
+  date: Date;
   frequency: string;
   type: string;
 }
@@ -25,38 +25,46 @@ interface TaskModalProps {
   visible: boolean;
   onClose: () => void;
   onSave: (task: TaskPayload) => void;
+  initialValues?: {
+    title?: string;
+    description?: string;
+    date?: Date;
+    frequency?: string;
+    type?: string;
+  };
 }
 
-const TaskModal = ({ visible, onClose, onSave }: TaskModalProps) => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [date, setDate] = useState(new Date());
+const TaskModal: React.FC<TaskModalProps> = ({
+  visible,
+  onClose,
+  onSave,
+  initialValues = {},
+}) => {
+  const [title, setTitle] = useState(initialValues.title || '');
+  const [description, setDescription] = useState(initialValues.description || '');
+  const [date, setDate] = useState(initialValues.date || new Date());
+  const [frequency, setFrequency] = useState(initialValues.frequency || 'once');
+  const [customFrequency, setCustomFrequency] = useState('');
+  const [type, setType] = useState(initialValues.type || 'personal');
+  
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [frequency, setFrequency] = useState('once');
-  const [taskType, setTaskType] = useState('medication');
-  
-  const frequencyOptions = [
-    { label: 'Once', value: 'once' },
-    { label: 'Daily', value: 'daily' },
-    { label: 'Weekly', value: 'weekly' },
-    { label: 'Monthly', value: 'monthly' }
-  ];
-  
-  const taskTypes = ['medication', 'wound', 'appointment', 'other'];
-  
+
   const handleSave = () => {
     if (!title.trim()) {
-      alert('Please enter a title');
+      alert('Please enter a title for the task.');
       return;
     }
+    
+    // Use customFrequency if "other" is selected, otherwise use the selected frequency
+    const finalFrequency = frequency === 'other' ? customFrequency : frequency;
     
     onSave({
       title,
       description,
-      date: date.toISOString(),
-      frequency,
-      type: taskType
+      date,
+      frequency: finalFrequency,
+      type,
     });
     
     // Reset form
@@ -64,45 +72,34 @@ const TaskModal = ({ visible, onClose, onSave }: TaskModalProps) => {
     setDescription('');
     setDate(new Date());
     setFrequency('once');
-    setTaskType('medication');
+    setCustomFrequency('');
+    setType('personal');
+    
+    onClose();
   };
-  
-  const onDateChange = (event: any, selectedDate?: Date) => {
-    const currentDate = selectedDate || date;
-    setShowDatePicker(Platform.OS === 'ios');
-    setShowTimePicker(Platform.OS === 'ios');
-    setDate(currentDate);
-  };
-  
+
   return (
     <Modal
       visible={visible}
       animationType="slide"
       transparent={true}
+      onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.centeredView}
+      >
+        <View style={styles.modalView}>
           <View style={styles.header}>
+            <Text style={styles.headerTitle}>
+              {initialValues.title ? 'Edit Task' : 'New Task'}
+            </Text>
             <TouchableOpacity onPress={onClose}>
-              <Text style={styles.cancelButton}>Cancel</Text>
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Add Health Task</Text>
-            <TouchableOpacity onPress={handleSave}>
-              <Text style={styles.saveButton}>Save</Text>
+              <Icon name="close" size={24} color="#000" />
             </TouchableOpacity>
           </View>
-          
-          <ScrollView style={styles.formContainer}>
-            <Text style={styles.label}>Task Type</Text>
-            <SegmentedControl
-              values={taskTypes.map(t => t.charAt(0).toUpperCase() + t.slice(1))}
-              selectedIndex={taskTypes.indexOf(taskType)}
-              onChange={(event) => {
-                setTaskType(taskTypes[event.nativeEvent.selectedSegmentIndex]);
-              }}
-              style={styles.segmentedControl}
-            />
-            
+
+          <ScrollView style={styles.scrollView}>
             <Text style={styles.label}>Title</Text>
             <TextInput
               style={styles.input}
@@ -110,17 +107,17 @@ const TaskModal = ({ visible, onClose, onSave }: TaskModalProps) => {
               onChangeText={setTitle}
               placeholder="Enter task title"
             />
-            
+
             <Text style={styles.label}>Description</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
               value={description}
               onChangeText={setDescription}
-              placeholder="Enter task details"
+              placeholder="Enter task description"
               multiline
-              numberOfLines={3}
+              numberOfLines={4}
             />
-            
+
             <Text style={styles.label}>Date & Time</Text>
             <TouchableOpacity 
               style={styles.dateTimeButton}
@@ -128,141 +125,189 @@ const TaskModal = ({ visible, onClose, onSave }: TaskModalProps) => {
             >
               <Text>{date.toLocaleDateString()}</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity 
               style={styles.dateTimeButton}
               onPress={() => setShowTimePicker(true)}
             >
               <Text>{date.toLocaleTimeString()}</Text>
             </TouchableOpacity>
-            
-            {(showDatePicker || showTimePicker) && (
+
+            {showDatePicker && (
               <DateTimePicker
                 value={date}
-                mode={showDatePicker ? 'date' : 'time'}
+                mode="date"
                 display="default"
-                onChange={onDateChange}
+                onChange={(event, selectedDate) => {
+                  setShowDatePicker(Platform.OS === 'ios');
+                  if (selectedDate) {
+                    const newDate = new Date(selectedDate);
+                    // Preserve the time from the current date
+                    newDate.setHours(date.getHours(), date.getMinutes());
+                    setDate(newDate);
+                  }
+                }}
               />
             )}
-            
+
+            {showTimePicker && (
+              <DateTimePicker
+                value={date}
+                mode="time"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  setShowTimePicker(Platform.OS === 'ios');
+                  if (selectedDate) {
+                    const newDate = new Date(date);
+                    // Preserve the date but update the time
+                    newDate.setHours(
+                      selectedDate.getHours(),
+                      selectedDate.getMinutes()
+                    );
+                    setDate(newDate);
+                  }
+                }}
+              />
+            )}
+
             <Text style={styles.label}>Frequency</Text>
-            <View style={styles.frequencyContainer}>
-              {frequencyOptions.map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    styles.frequencyOption,
-                    frequency === option.value && styles.frequencyOptionSelected
-                  ]}
-                  onPress={() => setFrequency(option.value)}
-                >
-                  <Text
-                    style={[
-                      styles.frequencyText,
-                      frequency === option.value && styles.frequencyTextSelected
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={frequency}
+                onValueChange={(itemValue) => setFrequency(itemValue)}
+                style={styles.picker}
+                mode="dropdown"
+              >
+                <Picker.Item label="Once" value="once" />
+                <Picker.Item label="Daily" value="daily" />
+                <Picker.Item label="Weekly" value="weekly" />
+                <Picker.Item label="Monthly" value="monthly" />
+                <Picker.Item label="Custom" value="other" />
+              </Picker>
             </View>
+            
+            {frequency === 'other' && (
+              <>
+                <Text style={styles.label}>Custom Frequency</Text>
+                <TextInput
+                  style={styles.input}
+                  value={customFrequency}
+                  onChangeText={setCustomFrequency}
+                  placeholder="Enter custom frequency (e.g. Every 3 days)"
+                />
+              </>
+            )}
+
+            <Text style={styles.label}>Type</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={type}
+                onValueChange={(itemValue: React.SetStateAction<string>) => setType(itemValue)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Personal" value="personal" />
+                <Picker.Item label="Work" value="work" />
+                <Picker.Item label="Health" value="health" />
+                <Picker.Item label="Education" value="education" />
+                <Picker.Item label="Other" value="other" />
+              </Picker>
+            </View>
+
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={handleSave}
+            >
+              <Text style={styles.saveButtonText}>Save Task</Text>
+            </TouchableOpacity>
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
 
-export default TaskModal;
-
 const styles = StyleSheet.create({
-  modalOverlay: {
+  centeredView: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  modalContent: {
-    backgroundColor: '#FFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
+  modalView: {
+    width: '90%',
     maxHeight: '80%',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  cancelButton: {
-    color: '#007AFF',
-    fontSize: 16,
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
   headerTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
   },
-  saveButton: {
-    color: '#007AFF',
-    fontSize: 16,
-  },
-  formContainer: {
-    flexGrow: 1,
+  scrollView: {
+    padding: 15,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
     marginBottom: 5,
-    marginTop: 15,
+    fontWeight: '500',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#e0e0e0',
     borderRadius: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 14,
-    backgroundColor: '#FFF',
-    color: '#000',
+    padding: 10,
+    marginBottom: 15,
+    fontSize: 16,
   },
   textArea: {
-    height: 70,
+    height: 100,
+    textAlignVertical: 'top',
   },
   dateTimeButton: {
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#e0e0e0',
     borderRadius: 5,
-    padding: 12,
-    alignItems: 'center',
-    marginBottom: 10,
-    backgroundColor: '#FFF',
+    padding: 10,
+    marginBottom: 15,
   },
-  segmentedControl: {
-    marginBottom: 10,
-  },
-  frequencyContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  frequencyOption: {
+  pickerContainer: {
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#e0e0e0',
     borderRadius: 5,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    marginRight: 8,
-    marginBottom: 8,
+    marginBottom: 15,
   },
-  frequencyOptionSelected: {
-    backgroundColor: '#007AFF',
+  picker: {
+    height: 50,
   },
-  frequencyText: {
-    color: '#007AFF',
+  saveButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 5,
+    padding: 15,
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 20,
   },
-  frequencyTextSelected: {
-    color: '#FFF',
+  saveButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
+
+export default TaskModal;
