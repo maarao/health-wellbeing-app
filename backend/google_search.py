@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-import nodriver
+import zendriver as nodriver
 import asyncio
 
 async def google_search(query):

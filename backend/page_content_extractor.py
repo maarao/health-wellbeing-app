@@ -25,6 +25,10 @@ async def get_page_text_content(url):
     except Exception as e:
         print(f"Error: {e}")
         return ""
+    
+    finally:
+        if 'browser' in locals():
+            await browser.stop()
 
 if __name__ == "__main__":
     async def main():
