@@ -3,6 +3,8 @@ import { Camera, CameraView, useCameraPermissions } from 'expo-camera';
 import * as FileSystem from 'expo-file-system';
 import * as WebBrowster from 'expo-web-browser';
 import * as React from 'react';
+import { API_URL } from '@env';
+
 
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
@@ -24,6 +26,9 @@ export default function HomeScreen() {
   const [userInput, setUserInput] = React.useState<string>('');
   const scrollViewRef = React.useRef<ScrollView>(null);
 
+
+
+
   const takePhoto = async () => {
     if (cameraRef.current) {
       const photo = await cameraRef.current.takePictureAsync();
@@ -37,6 +42,10 @@ export default function HomeScreen() {
           to: fileUri,
         });
         console.log('Photo saved to:', fileUri);
+
+
+        // Save photoUri to AsyncStorage - No longer needed
+
 
         // Update the state with the photo URI and mark the photo as taken
         setPhotoUri(fileUri);
@@ -54,7 +63,85 @@ export default function HomeScreen() {
     setMessages([]);
   };
 
-  const startConversation = () => {
+  const convertImageToBase64 = async (uri: string): Promise<string> => {
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64String = (reader.result as string).split(',')[1];
+          resolve(base64String);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Error converting image to base64:', error);
+      throw error;
+    }
+  };
+
+  const analyzeImage = async () => {
+    console.log('analyzeImage called, photoUri:', photoUri);
+    if (!photoUri) {
+      console.log('No photo URI available');
+      return;
+    }
+
+    let response;
+    try {
+      // Convert image to base64
+      // Convert image to base64
+      const base64Image = await convertImageToBase64(photoUri);
+      console.log('base64Image length:', base64Image.length);
+      
+      console.log('Before fetch call');
+      const requestBody = { image: base64Image };
+      console.log('Request body length:', JSON.stringify(requestBody).length);
+      
+      response = await fetch(`${API_URL}/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server error:', response.status, errorText);
+        throw new Error(`Server error: ${response.status} ${errorText}`);
+      }
+      console.log('After fetch call'); // Added log
+
+      console.log('Fetch response:', response); // Log the entire response object
+      console.log('response.ok:', response.ok); // Log response.ok
+      console.log('response.status:', response.status); // Log response.status
+      console.log('response.statusText:', response.statusText); // Log response.statusText
+
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const responseData = await response.json();
+      console.log('Backend response:', responseData);
+
+      // Store response in AsyncStorage - if needed, implement AsyncStorage import and usage
+      // For now, just console.log the response
+
+    } catch (error) {
+      console.error("Error analyzing image during fetch: ", error); // Updated log in catch block
+    }
+
+  };
+
+  const startConversation = async () => {
+    if (photoUri) {
+      await analyzeImage();
+    }
     setInConversation(true);
     // Initial AI message
     setMessages([
@@ -68,30 +155,31 @@ export default function HomeScreen() {
 
   const sendMessage = () => {
     if (!userInput.trim()) return;
-    
+
     // Add user message
-    const newMessages = [...messages, { 
-      id: messages.length + 1, 
-      text: userInput, 
-      isUser: true 
+    const newMessages = [...messages, {
+      id: messages.length + 1,
+      text: userInput,
+      isUser: true
     }];
-    
     setMessages(newMessages);
+
     setUserInput('');
-    
+
+
     // Simulate AI response (in a real app, you would call an API here)
     setTimeout(() => {
       setMessages(current => [
-        ...current, 
-        { 
-          id: current.length + 1, 
-          text: getAIResponse(userInput), 
-          isUser: false 
+        ...current,
+        {
+          id: current.length + 1,
+          text: getAIResponse(userInput),
+          isUser: false
         }
       ]);
     }, 1000);
   };
-  
+
   // Simple function to simulate AI responses
   const getAIResponse = (input: string) => {
     const responses = [
@@ -101,7 +189,7 @@ export default function HomeScreen() {
       "I notice some patterns in your photo that suggest you might benefit from more hydration throughout the day.",
       "Your photo shows good progress! Remember that consistency is key to achieving your health goals."
     ];
-    
+
     return responses[Math.floor(Math.random() * responses.length)];
   };
 
@@ -126,16 +214,16 @@ export default function HomeScreen() {
       ) : !inConversation ? (
         <ThemedView style={{ flex: 1, padding: 20, justifyContent: 'center' }}>
           <ThemedText style={styles.headerText}>Photo Captured!</ThemedText>
-          
+
           <View style={styles.resultContainer}>
             <ThemedText style={styles.descriptionText}>
               Here's the photo you took. You can continue or take another one.
             </ThemedText>
-            
+
             {photoUri && (
               <Image source={{ uri: photoUri }} style={styles.resultImage} />
             )}
-            
+
             <View style={styles.buttonRow}>
               <Button title="Take Another Photo" onPress={resetCamera} />
               <Button title="Continue" onPress={startConversation} />
@@ -149,8 +237,8 @@ export default function HomeScreen() {
             <ThemedText style={styles.chatHeaderTitle}>AI Health Assistant</ThemedText>
             <View style={{ width: 50 }} />
           </ThemedView>
-          
-          <ScrollView 
+
+          <ScrollView
             ref={scrollViewRef}
             style={styles.chatContainer}
             contentContainerStyle={styles.chatContentContainer}
@@ -158,12 +246,12 @@ export default function HomeScreen() {
             {photoUri && (
               <Image source={{ uri: photoUri }} style={styles.chatImage} />
             )}
-            
+
             {messages.map(message => (
-              <View 
-                key={message.id} 
+              <View
+                key={message.id}
                 style={[
-                  styles.messageBubble, 
+                  styles.messageBubble,
                   message.isUser ? styles.userBubble : styles.aiBubble
                 ]}
               >
@@ -173,7 +261,7 @@ export default function HomeScreen() {
               </View>
             ))}
           </ScrollView>
-          
+
           <ThemedView style={styles.inputContainer}>
             <TextInput
               style={styles.input}
@@ -227,7 +315,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     marginVertical: 20,
     alignItems: 'center',
-  },
+    },
   image: {
     width: 200,
     height: 200,
