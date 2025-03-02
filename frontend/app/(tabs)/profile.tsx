@@ -47,6 +47,7 @@ export default function ProfileScreen() {
   const [editedUser, setEditedUser] = useState(initialUser);
 
   useEffect(() => {
+    saveProfileData();
     loadProfileData();
   }, []);
 
